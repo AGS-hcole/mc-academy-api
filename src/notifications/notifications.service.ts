@@ -1,0 +1,255 @@
+// src/notifications/notifications.service.ts
+import { Injectable, Logger } from '@nestjs/common';
+import nodemailer, { Transporter } from 'nodemailer';
+import { Session, SessionSlot, User } from '@prisma/client';
+import { DateTime } from 'luxon';
+import twilio, { Twilio } from 'twilio';
+import { PrismaService } from 'src/prisma/prisma.service';
+
+const TZ = 'Europe/Paris';
+
+@Injectable()
+export class NotificationsService {
+  private readonly logger = new Logger(NotificationsService.name);
+  private mailer: Transporter;
+  private twilio?: Twilio;
+
+  constructor(private prisma: PrismaService) {
+    // Email transport
+    this.mailer = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: Number(process.env.SMTP_PORT ?? 587),
+      secure: false,
+      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+    });
+
+    // Twilio (optional)
+    if (process.env.TWILIO_SID && process.env.TWILIO_TOKEN) {
+      this.twilio = twilio(process.env.TWILIO_SID, process.env.TWILIO_TOKEN);
+    }
+  }
+
+  // ---------- Public API ----------
+
+  /**
+   * Notify all users about newly published sessions (e.g., Saturday 20:00).
+   */
+  async notifySessionsPublished(since: Date) {
+    // sessions published since "since"
+    const sessions = await this.prisma.session.findMany({
+      where: { isPublished: true, publishedAt: { gte: since } },
+      include: { site: true },
+      orderBy: [{ date: 'asc' }, { slot: 'asc' }],
+    });
+
+    if (!sessions.length) {
+      this.logger.log('No newly published sessions to notify.');
+      return;
+    }
+
+    // only active users
+    const users = await this.prisma.user.findMany({
+      where: {},
+      select: {
+        id: true,
+        firstname: true,
+        lastname: true,
+        email: true,
+        phone: true,
+        notifyEmail: true,
+        notifySMS: true,
+        notifyWhatsApp: true,
+      },
+    });
+
+    for (const user of users) {
+      await this.notifyUserSessionsPublished(user as any, sessions);
+    }
+
+    this.logger.log(
+      `Notifications sent for ${sessions.length} sessions to ${users.length} users.`,
+    );
+  }
+
+  /**
+   * Reminder for sessions of a given local day (e.g., J-1 18:00).
+   */
+  async notifyDayReminder(localDay: Date) {
+    const start = DateTime.fromJSDate(localDay, { zone: TZ })
+      .startOf('day')
+      .toUTC()
+      .toJSDate();
+    const end = DateTime.fromJSDate(localDay, { zone: TZ })
+      .endOf('day')
+      .toUTC()
+      .toJSDate();
+
+    const sessions = await this.prisma.session.findMany({
+      where: {
+        date: { gte: start, lte: end },
+        isPublished: true,
+        isCanceled: false,
+      },
+      include: {
+        site: true,
+        attendances: {
+          where: { status: 'YES' },
+          include: { user: true },
+        },
+      },
+      orderBy: [{ slot: 'asc' }],
+    });
+
+    for (const session of sessions) {
+      // notify only YES attendees
+      for (const att of session.attendances) {
+        await this.notifyUserDayReminder(att.user as any, session);
+      }
+    }
+
+    this.logger.log(`Day reminders sent for ${sessions.length} sessions.`);
+  }
+
+  // ---------- Per-user notifications ----------
+
+  async notifyUserSessionsPublished(
+    user: Pick<
+      User,
+      | 'firstname'
+      | 'lastname'
+      | 'email'
+      | 'phone'
+      | 'notifyEmail'
+      | 'notifySMS'
+      | 'notifyWhatsApp'
+    >,
+    sessions: (Session & { site: { name: string } })[],
+  ) {
+    const subject = 'Nouveaux créneaux disponibles';
+    const lines = sessions
+      .map(s => `• ${this.formatSessionLine(s)}`)
+      .join('<br/>');
+    const html = `
+      <p>Bonjour ${user.firstname},</p>
+      <p>Les nouveaux créneaux de la semaine sont ouverts&nbsp;:</p>
+      <p>${lines}</p>
+      <p>Réponds avant vendredi 18h depuis ton espace.</p>
+      <p>— My Center Academy</p>
+    `;
+    const text = this.stripHtml(html);
+
+    if (user.notifyEmail && user.email)
+      await this.sendEmail(user.email, subject, html, text);
+    const smsWaText = `Nouveaux créneaux dispo:\n${sessions.map(s => `- ${this.formatSessionLine(s, true)}`).join('\n')}\nRépondre avant ven 18h.`;
+    if (user.notifySMS && user.phone) await this.sendSMS(user.phone, smsWaText);
+    if (user.notifyWhatsApp && user.phone)
+      await this.sendWhatsApp(user.phone, smsWaText);
+  }
+
+  async notifyUserDayReminder(
+    user: Pick<
+      User,
+      | 'firstname'
+      | 'lastname'
+      | 'email'
+      | 'phone'
+      | 'notifyEmail'
+      | 'notifySMS'
+      | 'notifyWhatsApp'
+    >,
+    session: Session & { site: { name: string } },
+  ) {
+    const subject = 'Rappel de séance';
+    const line = this.formatSessionLine(session);
+    const html = `
+      <p>Bonjour ${user.firstname},</p>
+      <p>Rappel: tu es inscrit(e) à&nbsp;: ${line}</p>
+      <p>À tout à l'heure !</p>
+      <p>— My Center Academy</p>
+    `;
+    const text = this.stripHtml(html);
+
+    if (user.notifyEmail && user.email)
+      await this.sendEmail(user.email, subject, html, text);
+    const smsWaText = `Rappel séance: ${this.formatSessionLine(session, true)}.`;
+    if (user.notifySMS && user.phone) await this.sendSMS(user.phone, smsWaText);
+    if (user.notifyWhatsApp && user.phone)
+      await this.sendWhatsApp(user.phone, smsWaText);
+  }
+
+  // ---------- Low-level senders ----------
+
+  private async sendEmail(
+    to: string,
+    subject: string,
+    html: string,
+    text: string,
+  ) {
+    const from = process.env.SMTP_FROM ?? process.env.SMTP_USER!;
+    try {
+      await this.mailer.sendMail({ from, to, subject, html, text });
+      this.logger.log(`Email sent to ${to}: ${subject}`);
+    } catch (e) {
+      this.logger.error(`Email failed to ${to}: ${e?.message ?? e}`);
+    }
+  }
+
+  private async sendSMS(to: string, body: string) {
+    if (!this.twilio || !process.env.TWILIO_SMS_FROM) return;
+    try {
+      await this.twilio.messages.create({
+        from: process.env.TWILIO_SMS_FROM,
+        to,
+        body,
+      });
+      this.logger.log(`SMS sent to ${to}`);
+    } catch (e) {
+      this.logger.error(`SMS failed to ${to}: ${e?.message ?? e}`);
+    }
+  }
+
+  private async sendWhatsApp(to: string, body: string) {
+    if (!this.twilio || !process.env.TWILIO_WA_FROM) return;
+    const toWa = to.startsWith('whatsapp:') ? to : `whatsapp:${to}`;
+    try {
+      await this.twilio.messages.create({
+        from: process.env.TWILIO_WA_FROM,
+        to: toWa,
+        body,
+      });
+      this.logger.log(`WhatsApp sent to ${to}`);
+    } catch (e) {
+      this.logger.error(`WhatsApp failed to ${to}: ${e?.message ?? e}`);
+    }
+  }
+
+  // ---------- Helpers ----------
+
+  private formatSessionLine(
+    s: Session & { site: { name: string } },
+    plain = false,
+  ) {
+    // date stored UTC@00:00 → display local day + slot label
+    const d = DateTime.fromJSDate(s.date, { zone: 'utc' }).setZone(TZ);
+    const dateStr = d.toFormat('ccc dd LLL yyyy'); // e.g., "lun. 08 sept. 2025"
+    const slotStr =
+      s.slot === SessionSlot.AM
+        ? plain
+          ? 'Matin'
+          : '<strong>Matin</strong>'
+        : plain
+          ? 'Après-midi'
+          : '<strong>Après-midi</strong>';
+    const site = s.site?.name ?? 'Site';
+    return plain
+      ? `${dateStr} • ${slotStr} • ${site}`
+      : `${dateStr} • ${slotStr} • ${site}`;
+  }
+
+  private stripHtml(html: string) {
+    return html
+      .replace(/<[^>]+>/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+}

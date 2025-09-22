@@ -1,0 +1,198 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Enums ----------
+enum Role {
+  user
+  admin
+}
+
+enum SessionSlot {
+  AM
+  PM
+}
+
+enum AttendanceStatus {
+  YES
+  NO
+}
+
+enum FormulaType {
+  MORNING     // accès AM
+  AFTERNOON   // accès PM
+  FULL        // accès AM + PM
+}
+
+enum NotifyChannel {
+  EMAIL
+  SMS
+  WHATSAPP
+}
+
+// ---------- Core ----------
+model User {
+  id                 String    @id @default(uuid())
+  role               Role      @default(user)
+
+  // Identity
+  firstname          String
+  lastname           String
+  email              String    @unique
+  phone              String?
+  birthDate          DateTime? // date of birth
+  fftLicenseNumber   String?   @unique
+
+  // Contract / formula
+  formula            FormulaType?
+
+  // Security
+  password           String
+  refreshToken       String?
+  resetPasswordToken String?
+  resetTokenExpires  DateTime?
+
+  // Consents (RGPD)
+  privacyConsentAt   DateTime? // CGU / privacy consent
+  photoConsentAt     DateTime?
+  marketingConsentAt DateTime?
+
+  // Images stored in DB (small scope <= 50 users)
+  avatarData         Bytes?
+  avatarMime         String?
+  backgroundData     Bytes?
+  backgroundMime     String?
+
+  // Notifications preferences
+  notifyEmail        Boolean   @default(true)
+  notifySMS          Boolean   @default(false)
+  notifyWhatsApp     Boolean   @default(false)
+
+  attendances        Attendance[]
+
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime? @updatedAt
+
+  @@index([lastname, firstname])
+  @@index([email])
+}
+
+model Site {
+  id        String   @id @default(uuid())
+  name      String
+  // optional: address fields
+  isActive  Boolean  @default(true)
+
+  sessions  Session[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime? @updatedAt
+
+  @@unique([name])
+}
+
+model Session {
+  id          String       @id @default(uuid())
+  siteId      String
+  date        DateTime     // store day at local midnight (normalized) in UTC
+  slot        SessionSlot  // AM | PM
+
+  // Publication & lifecycle
+  isPublished Boolean      @default(false) // becomes true at Saturday 20:00
+  publishedAt DateTime?
+  isCanceled  Boolean      @default(false)
+  notes       String?
+
+  site        Site         @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  attendances Attendance[]
+
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime?    @updatedAt
+
+  // 1 session per site/day/slot
+  @@unique([siteId, date, slot])
+  @@index([date, slot])
+  @@index([siteId, date])
+}
+
+model Attendance {
+  id            String           @id @default(uuid())
+  sessionId     String
+  userId        String
+  status        AttendanceStatus // YES | NO
+  comment       String?
+  respondedAt   DateTime         @default(now())
+
+  // Denormalized flag to ease monthly billing/reporting
+  // true when user's formula doesn't cover the session slot
+  outOfContract Boolean          @default(false)
+
+  // Audit
+  createdByAdmin Boolean         @default(false) // admin override after cutoff
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime?       @updatedAt
+
+  session       Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, userId])   // 1 answer per user per session
+  @@index([userId, sessionId])
+  @@index([outOfContract])
+}
+
+// ---------- Calendaring helpers ----------
+
+// Disable auto-generation over school vacations (by range & region label)
+model HolidayPeriod {
+  id         String   @id @default(uuid())
+  label      String   // e.g., "Vacances Toussaint 2025 - Zone B"
+  region     String?  // optional region/code
+  startDate  DateTime // inclusive (local day start in UTC)
+  endDate    DateTime // inclusive (local day end in UTC)
+  isActive   Boolean  @default(true)
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime? @updatedAt
+
+  @@index([startDate, endDate])
+  @@index([isActive])
+}
+
+// Optional season boundaries for reporting/archives
+model Season {
+  id        String   @id @default(uuid())
+  name      String   // e.g., "2025-2026"
+  startsAt  DateTime
+  endsAt    DateTime
+  isActive  Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime? @updatedAt
+
+  @@unique([name])
+}
+
+// Global config (singleton row) to avoid hard-coding cutoffs in code
+model AppSetting {
+  id                          Int       @id @default(1)
+  responseCutoffWeekday       Int       @default(5)  // 5 = Friday (ISO: Mon=1..Sun=7)
+  responseCutoffHourLocal     Int       @default(18) // 18:00 Europe/Paris
+  publishWeekday              Int       @default(6)  // 6 = Saturday
+  publishHourLocal            Int       @default(20) // 20:00 Europe/Paris
+  autogenWeekday              Int       @default(5)  // 5 = Friday
+  autogenHourLocal            Int       @default(0)  // 00:00 Europe/Paris
+
+  createdAt                   DateTime  @default(now())
+  updatedAt                   DateTime? @updatedAt
+}
