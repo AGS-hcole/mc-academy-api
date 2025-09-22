@@ -8,6 +8,7 @@ import { UserModule } from './user/user.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { NotificationsModule } from './notifications/notifications.module';
+import { RolesModule } from './roles/roles.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { NotificationsModule } from './notifications/notifications.module';
     NotificationsModule,
     UserModule,
     DashboardModule,
+    RolesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
