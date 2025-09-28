@@ -6,7 +6,6 @@ import {
   Param,
   Body,
   Req,
-  UseGuards,
 } from '@nestjs/common';
 import { SessionsService } from './sessions.service';
 import { AttendanceStatus } from '@prisma/client';
