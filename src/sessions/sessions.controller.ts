@@ -10,20 +10,68 @@ import {
   Query,
   Req,
 } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiQuery,
+  ApiBody,
+} from '@nestjs/swagger';
 import { SessionsService } from './sessions.service';
 import { AttendanceStatus, SessionSlot } from '@prisma/client';
 import { CreateSessionDto, UpdateSessionDto, AdminRegisterDto } from './dto';
 
+@ApiTags('sessions')
 @Controller('sessions')
 export class SessionsController {
   constructor(private readonly sessions: SessionsService) {}
 
   @Get('upcoming')
+  @ApiOperation({ summary: 'Get upcoming sessions' })
+  @ApiResponse({ status: 200, description: 'List of upcoming sessions' })
   async getUpcoming() {
     return this.sessions.getUpcomingSessions();
   }
 
   @Get()
+  @ApiOperation({ summary: 'Get sessions with optional filters' })
+  @ApiQuery({
+    name: 'siteId',
+    required: false,
+    description: 'Filter by site ID',
+  })
+  @ApiQuery({
+    name: 'startDate',
+    required: false,
+    description: 'Filter by start date (ISO string)',
+  })
+  @ApiQuery({
+    name: 'endDate',
+    required: false,
+    description: 'Filter by end date (ISO string)',
+  })
+  @ApiQuery({
+    name: 'slot',
+    required: false,
+    enum: SessionSlot,
+    description: 'Filter by session slot',
+  })
+  @ApiQuery({
+    name: 'isPublished',
+    required: false,
+    type: Boolean,
+    description: 'Filter by published status',
+  })
+  @ApiQuery({
+    name: 'isCanceled',
+    required: false,
+    type: Boolean,
+    description: 'Filter by canceled status',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'List of sessions matching filters',
+  })
   async getSessions(
     @Query('siteId') siteId?: string,
     @Query('startDate') startDate?: string,
@@ -51,6 +99,11 @@ export class SessionsController {
   }
 
   @Post()
+  @ApiOperation({ summary: 'Create a new session (admin only)' })
+  @ApiBody({ type: CreateSessionDto })
+  @ApiResponse({ status: 201, description: 'Session created successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid input data' })
+  @ApiResponse({ status: 404, description: 'Site not found' })
   // @UseGuards(AdminGuard) // Uncomment when admin guard is available
   async createSession(@Body() dto: CreateSessionDto) {
     return this.sessions.createSession(dto);
