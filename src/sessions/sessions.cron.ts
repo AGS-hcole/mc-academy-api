@@ -58,12 +58,39 @@ export class SessionsCron {
 
       for (const slot of ['AM', 'PM'] as const) {
         for (const site of sites) {
+          // Set default times based on slot
+          const sessionDate = new Date(dateAtUTC);
+          const startTime = new Date(sessionDate);
+          const endTime = new Date(sessionDate);
+
+          if (slot === 'AM') {
+            startTime.setHours(9, 0, 0, 0); // 9:00 AM
+            endTime.setHours(12, 0, 0, 0); // 12:00 PM
+          } else {
+            startTime.setHours(14, 0, 0, 0); // 2:00 PM
+            endTime.setHours(17, 0, 0, 0); // 5:00 PM
+          }
+
           await this.prisma.session.upsert({
             where: {
               siteId_date_slot: { siteId: site.id, date: dateAtUTC, slot },
             },
-            update: {},
-            create: { siteId: site.id, date: dateAtUTC, slot },
+            update: {
+              // Update times for existing sessions if they don't have them
+              startTime: {
+                set: startTime,
+              },
+              endTime: {
+                set: endTime,
+              },
+            },
+            create: {
+              siteId: site.id,
+              date: dateAtUTC,
+              slot,
+              startTime,
+              endTime,
+            },
           });
         }
       }

@@ -3,10 +3,12 @@ import {
   Injectable,
   ForbiddenException,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { AttendanceStatus } from '@prisma/client';
-import { isBefore } from 'date-fns';
+import { AttendanceStatus, SessionSlot, User } from '@prisma/client';
+import { isBefore, startOfDay, endOfDay } from 'date-fns';
+import { CreateSessionDto, UpdateSessionDto, AdminRegisterDto } from './dto';
 
 //const tz = 'Europe/Paris';
 
@@ -20,9 +22,169 @@ export class SessionsService {
       where: { date: { gte: now } },
       orderBy: [{ date: 'asc' }, { slot: 'asc' }],
       include: {
+        site: true,
         attendances: { include: { user: true } },
       },
     });
+  }
+
+  async getAllSessions(filters?: {
+    siteId?: string;
+    startDate?: Date;
+    endDate?: Date;
+    slot?: SessionSlot;
+    isPublished?: boolean;
+    isCanceled?: boolean;
+  }) {
+    const where: any = {};
+
+    if (filters?.siteId) where.siteId = filters.siteId;
+    if (filters?.slot) where.slot = filters.slot;
+    if (filters?.isPublished !== undefined)
+      where.isPublished = filters.isPublished;
+    if (filters?.isCanceled !== undefined)
+      where.isCanceled = filters.isCanceled;
+
+    if (filters?.startDate || filters?.endDate) {
+      where.date = {};
+      if (filters.startDate) where.date.gte = startOfDay(filters.startDate);
+      if (filters.endDate) where.date.lte = endOfDay(filters.endDate);
+    }
+
+    return this.prisma.session.findMany({
+      where,
+      orderBy: [{ date: 'asc' }, { slot: 'asc' }],
+      include: {
+        site: true,
+        attendances: { include: { user: true } },
+      },
+    });
+  }
+
+  async getSessionById(id: string) {
+    const session = await this.prisma.session.findUnique({
+      where: { id },
+      include: {
+        site: true,
+        attendances: { include: { user: true } },
+      },
+    });
+
+    if (!session) {
+      throw new NotFoundException('Session not found');
+    }
+
+    return session;
+  }
+
+  async createSession(dto: CreateSessionDto) {
+    // Check if site exists
+    const site = await this.prisma.site.findUnique({
+      where: { id: dto.siteId },
+    });
+    if (!site) {
+      throw new NotFoundException('Site not found');
+    }
+
+    // Parse dates
+    const sessionDate = new Date(dto.date);
+    const startTime = dto.startTime ? new Date(dto.startTime) : null;
+    const endTime = dto.endTime ? new Date(dto.endTime) : null;
+
+    // Validate time range
+    if (startTime && endTime && startTime >= endTime) {
+      throw new BadRequestException('Start time must be before end time');
+    }
+
+    try {
+      return await this.prisma.session.create({
+        data: {
+          siteId: dto.siteId,
+          date: sessionDate,
+          slot: dto.slot,
+          startTime,
+          endTime,
+          notes: dto.notes,
+          isPublished: dto.isPublished ?? false,
+        },
+        include: {
+          site: true,
+          attendances: { include: { user: true } },
+        },
+      });
+    } catch (error) {
+      if (error.code === 'P2002') {
+        throw new BadRequestException(
+          'A session already exists for this site, date, and slot',
+        );
+      }
+      throw error;
+    }
+  }
+
+  async updateSession(id: string, dto: UpdateSessionDto) {
+    const session = await this.prisma.session.findUnique({
+      where: { id },
+    });
+    if (!session) {
+      throw new NotFoundException('Session not found');
+    }
+
+    // If updating site, check if it exists
+    if (dto.siteId && dto.siteId !== session.siteId) {
+      const site = await this.prisma.site.findUnique({
+        where: { id: dto.siteId },
+      });
+      if (!site) {
+        throw new NotFoundException('Site not found');
+      }
+    }
+
+    // Parse dates if provided
+    const updateData: any = { ...dto };
+    if (dto.date) updateData.date = new Date(dto.date);
+    if (dto.startTime) updateData.startTime = new Date(dto.startTime);
+    if (dto.endTime) updateData.endTime = new Date(dto.endTime);
+
+    // Validate time range if both times are provided or being updated
+    const startTime = updateData.startTime || session.startTime;
+    const endTime = updateData.endTime || session.endTime;
+    if (startTime && endTime && startTime >= endTime) {
+      throw new BadRequestException('Start time must be before end time');
+    }
+
+    try {
+      return await this.prisma.session.update({
+        where: { id },
+        data: updateData,
+        include: {
+          site: true,
+          attendances: { include: { user: true } },
+        },
+      });
+    } catch (error) {
+      if (error.code === 'P2002') {
+        throw new BadRequestException(
+          'A session already exists for this site, date, and slot',
+        );
+      }
+      throw error;
+    }
+  }
+
+  async deleteSession(id: string) {
+    const session = await this.prisma.session.findUnique({
+      where: { id },
+    });
+    if (!session) {
+      throw new NotFoundException('Session not found');
+    }
+
+    await this.prisma.session.delete({
+      where: { id },
+    });
+
+    return { message: 'Session deleted successfully' };
   }
 
   async rsvp(
@@ -54,6 +216,49 @@ export class SessionsService {
       where: { sessionId_userId: { sessionId, userId } },
       update: { status, comment, outOfContract, respondedAt: new Date() },
       create: { sessionId, userId, status, comment, outOfContract },
+    });
+  }
+
+  async adminRegister(
+    sessionId: string,
+    dto: AdminRegisterDto,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    adminUser: User,
+  ) {
+    // Check if session exists
+    const session = await this.prisma.session.findUnique({
+      where: { id: sessionId },
+    });
+    if (!session) throw new NotFoundException('Session not found');
+
+    // Check if target user exists
+    const user = await this.prisma.user.findUnique({
+      where: { id: dto.userId },
+    });
+    if (!user) throw new NotFoundException('User not found');
+
+    // Admin can register anyone without restrictions (bypass cutoff and formula)
+    const outOfContract =
+      (user.formula === 'MORNING' && session.slot === 'PM') ||
+      (user.formula === 'AFTERNOON' && session.slot === 'AM');
+
+    return this.prisma.attendance.upsert({
+      where: { sessionId_userId: { sessionId, userId: dto.userId } },
+      update: {
+        status: dto.status,
+        comment: dto.comment,
+        outOfContract,
+        respondedAt: new Date(),
+        createdByAdmin: true,
+      },
+      create: {
+        sessionId,
+        userId: dto.userId,
+        status: dto.status,
+        comment: dto.comment,
+        outOfContract,
+        createdByAdmin: true,
+      },
     });
   }
 

@@ -107,6 +107,10 @@ model Session {
   siteId      String
   date        DateTime     // store day at local midnight (normalized) in UTC
   slot        SessionSlot  // AM | PM
+  
+  // Time management
+  startTime   DateTime?    // specific start time for the session
+  endTime     DateTime?    // specific end time for the session
 
   // Publication & lifecycle
   isPublished Boolean      @default(false) // becomes true at Saturday 20:00
