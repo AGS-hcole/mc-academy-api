@@ -9,6 +9,8 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { NotificationsModule } from './notifications/notifications.module';
 import { RolesModule } from './roles/roles.module';
+import { SessionsModule } from './sessions/sessions.module';
+import { SitesModule } from './sites/sites.module';
 
 @Module({
   imports: [
@@ -20,6 +22,8 @@ import { RolesModule } from './roles/roles.module';
     UserModule,
     DashboardModule,
     RolesModule,
+    SessionsModule,
+    SitesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
