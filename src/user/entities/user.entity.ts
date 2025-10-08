@@ -1,5 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { Role } from '@prisma/client';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Role, FormulaType } from '@prisma/client';
 
 export class User {
   @ApiProperty({
@@ -47,6 +47,86 @@ export class User {
     example: 'user',
   })
   role: Role;
+
+  @ApiPropertyOptional({
+    description: 'Phone number',
+    nullable: true,
+    type: 'string',
+    example: '+33123456789',
+  })
+  phone?: string;
+
+  @ApiPropertyOptional({
+    description: 'Birth date',
+    nullable: true,
+    type: 'string',
+    example: '1990-01-01T00:00:00.000Z',
+  })
+  birthDate?: Date;
+
+  @ApiPropertyOptional({
+    description: 'FFT License number',
+    nullable: true,
+    type: 'string',
+    example: '1234567',
+  })
+  fftLicenseNumber?: string;
+
+  @ApiPropertyOptional({
+    description: 'Formula type',
+    enum: FormulaType,
+    nullable: true,
+    example: 'FULL',
+  })
+  formula?: FormulaType;
+
+  @ApiPropertyOptional({
+    description: 'Privacy consent date',
+    nullable: true,
+    type: 'string',
+    example: '2024-01-01T00:00:00.000Z',
+  })
+  privacyConsentAt?: Date;
+
+  @ApiPropertyOptional({
+    description: 'Photo consent date',
+    nullable: true,
+    type: 'string',
+    example: '2024-01-01T00:00:00.000Z',
+  })
+  photoConsentAt?: Date;
+
+  @ApiPropertyOptional({
+    description: 'Marketing consent date',
+    nullable: true,
+    type: 'string',
+    example: '2024-01-01T00:00:00.000Z',
+  })
+  marketingConsentAt?: Date;
+
+  @ApiPropertyOptional({
+    description: 'Email notifications enabled',
+    nullable: false,
+    type: 'boolean',
+    example: true,
+  })
+  notifyEmail?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'SMS notifications enabled',
+    nullable: false,
+    type: 'boolean',
+    example: false,
+  })
+  notifySMS?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'WhatsApp notifications enabled',
+    nullable: false,
+    type: 'boolean',
+    example: false,
+  })
+  notifyWhatsApp?: boolean;
 
   @ApiProperty({
     description: 'Created At',

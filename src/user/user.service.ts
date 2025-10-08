@@ -42,23 +42,47 @@ export class UserService {
       // Make the token expire within one hour
       const expires = addHours(new Date(), 1);
 
+      // Build the data object dynamically
+      const userData: any = {
+        firstname: dto.firstname,
+        lastname: dto.lastname,
+        email: dto.email,
+        role: dto.role,
+        password: hashedPassword,
+        resetPasswordToken: resetToken,
+        resetTokenExpires: expires,
+      };
+
+      // Add optional fields if provided
+      if (dto.phone !== undefined) userData.phone = dto.phone;
+      if (dto.birthDate !== undefined)
+        userData.birthDate = new Date(dto.birthDate);
+      if (dto.fftLicenseNumber !== undefined)
+        userData.fftLicenseNumber = dto.fftLicenseNumber;
+      if (dto.formula !== undefined) userData.formula = dto.formula;
+      if (dto.notifyEmail !== undefined) userData.notifyEmail = dto.notifyEmail;
+      if (dto.notifySMS !== undefined) userData.notifySMS = dto.notifySMS;
+      if (dto.notifyWhatsApp !== undefined)
+        userData.notifyWhatsApp = dto.notifyWhatsApp;
+
       const user = await this.prisma.user.create({
-        data: {
-          firstname: dto.firstname,
-          lastname: dto.lastname,
-          email: dto.email,
-          role: dto.role,
-          password: hashedPassword,
-          resetPasswordToken: resetToken,
-          resetTokenExpires: expires,
-        },
+        data: userData,
         select: {
           id: true,
           firstname: true,
           lastname: true,
           email: true,
           role: true,
+          phone: true,
+          birthDate: true,
+          fftLicenseNumber: true,
+          formula: true,
+          notifyEmail: true,
+          notifySMS: true,
+          notifyWhatsApp: true,
           resetPasswordToken: true,
+          createdAt: true,
+          updatedAt: true,
         },
       });
 
@@ -79,6 +103,16 @@ export class UserService {
           lastname: true,
           email: true,
           role: true,
+          phone: true,
+          birthDate: true,
+          fftLicenseNumber: true,
+          formula: true,
+          privacyConsentAt: true,
+          photoConsentAt: true,
+          marketingConsentAt: true,
+          notifyEmail: true,
+          notifySMS: true,
+          notifyWhatsApp: true,
           createdAt: true,
           updatedAt: true,
         },
@@ -99,6 +133,16 @@ export class UserService {
           lastname: true,
           email: true,
           role: true,
+          phone: true,
+          birthDate: true,
+          fftLicenseNumber: true,
+          formula: true,
+          privacyConsentAt: true,
+          photoConsentAt: true,
+          marketingConsentAt: true,
+          notifyEmail: true,
+          notifySMS: true,
+          notifyWhatsApp: true,
           createdAt: true,
           updatedAt: true,
         },
@@ -112,15 +156,51 @@ export class UserService {
 
   async update(id: string, dto: UpdateUserDto) {
     try {
+      // Build the update data object dynamically, only including provided fields
+      const updateData: any = {};
+
+      if (dto.firstname !== undefined) updateData.firstname = dto.firstname;
+      if (dto.lastname !== undefined) updateData.lastname = dto.lastname;
+      if (dto.email !== undefined)
+        updateData.email = dto.email.toLowerCase().trim();
+      if (dto.role !== undefined) updateData.role = dto.role;
+      if (dto.phone !== undefined) updateData.phone = dto.phone;
+      if (dto.birthDate !== undefined)
+        updateData.birthDate = new Date(dto.birthDate);
+      if (dto.fftLicenseNumber !== undefined)
+        updateData.fftLicenseNumber = dto.fftLicenseNumber;
+      if (dto.formula !== undefined) updateData.formula = dto.formula;
+      if (dto.privacyConsentAt !== undefined)
+        updateData.privacyConsentAt = new Date(dto.privacyConsentAt);
+      if (dto.photoConsentAt !== undefined)
+        updateData.photoConsentAt = new Date(dto.photoConsentAt);
+      if (dto.marketingConsentAt !== undefined)
+        updateData.marketingConsentAt = new Date(dto.marketingConsentAt);
+      if (dto.notifyEmail !== undefined)
+        updateData.notifyEmail = dto.notifyEmail;
+      if (dto.notifySMS !== undefined) updateData.notifySMS = dto.notifySMS;
+      if (dto.notifyWhatsApp !== undefined)
+        updateData.notifyWhatsApp = dto.notifyWhatsApp;
+
       const updatedUser = await this.prisma.user.update({
         where: { id },
-        data: { firstname: dto.firstname, lastname: dto.lastname },
+        data: updateData,
         select: {
           id: true,
           firstname: true,
           lastname: true,
           email: true,
           role: true,
+          phone: true,
+          birthDate: true,
+          fftLicenseNumber: true,
+          formula: true,
+          privacyConsentAt: true,
+          photoConsentAt: true,
+          marketingConsentAt: true,
+          notifyEmail: true,
+          notifySMS: true,
+          notifyWhatsApp: true,
           createdAt: true,
           updatedAt: true,
         },
@@ -179,7 +259,7 @@ export class UserService {
 
   private async sendWelcomeEmailToUser(user: any) {
     const replacements = {
-      fullname: user.fullname,
+      fullname: `${user.firstname} ${user.lastname}`,
       url: `${process.env.FRONT_URL}/reset-password?token=${user.resetPasswordToken}`,
       year: new Date().getFullYear().toString(),
     };
