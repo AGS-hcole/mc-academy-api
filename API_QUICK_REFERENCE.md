@@ -1,4 +1,4 @@
-# API Quick Reference - MyCenter Academy Sessions
+# API Quick Reference - MyCenter Academy
 
 ## 🔐 Authentification
 
@@ -10,6 +10,17 @@ Authorization: Bearer <jwt_token>
 ---
 
 ## 📋 Endpoints Résumé
+
+### Sites
+
+| Endpoint | Méthode | Auth | Description |
+|----------|---------|------|-------------|
+| `/sites` | GET | ✅ | Tous les sites |
+| `/sites/active` | GET | ✅ | Sites actifs uniquement |
+| `/sites/:id` | GET | ✅ | Détails d'un site |
+| `/sites` | POST | 🔒 Admin | Créer un site |
+| `/sites/:id` | PUT | 🔒 Admin | Modifier un site |
+| `/sites/:id` | DELETE | 🔒 Admin | Supprimer un site |
 
 ### Sessions (Public)
 
@@ -32,6 +43,56 @@ Authorization: Bearer <jwt_token>
 ---
 
 ## 🎯 Exemples Rapides
+
+### Sites
+
+```javascript
+// 1. Récupérer tous les sites
+fetch('/sites', {
+  headers: { 'Authorization': `Bearer ${token}` }
+})
+.then(res => res.json())
+.then(sites => console.log(sites));
+
+// 2. Récupérer les sites actifs
+fetch('/sites/active', {
+  headers: { 'Authorization': `Bearer ${token}` }
+});
+
+// 3. Créer un site (Admin)
+fetch('/sites', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    name: 'Centre Paris 15',
+    isActive: true
+  })
+});
+
+// 4. Modifier un site (Admin)
+fetch(`/sites/${siteId}`, {
+  method: 'PUT',
+  headers: {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    name: 'Nouveau nom',
+    isActive: false
+  })
+});
+
+// 5. Supprimer un site (Admin)
+fetch(`/sites/${siteId}`, {
+  method: 'DELETE',
+  headers: { 'Authorization': `Bearer ${token}` }
+});
+```
+
+### Sessions
 
 ### 1. Récupérer les sessions à venir
 
@@ -116,6 +177,19 @@ fetch(`/sessions/${sessionId}/admin-register`, {
 ---
 
 ## 📊 Modèles de Données
+
+### Site
+```typescript
+{
+  id: string;
+  name: string;              // Unique
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string | null;
+  _count?: { sessions: number; };
+  sessions?: Session[];      // 10 dernières sessions
+}
+```
 
 ### Session
 ```typescript
