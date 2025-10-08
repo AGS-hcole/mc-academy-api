@@ -36,6 +36,8 @@ Le module de gestion des sites permet aux administrateurs de créer, modifier et
 interface Site {
   id: string;                    // UUID du site
   name: string;                  // Nom du site (unique)
+  address: string | null;        // Adresse du site
+  city: string | null;           // Ville du site
   isActive: boolean;             // Site actif ?
   createdAt: string;             // Date de création (ISO 8601)
   updatedAt: string | null;      // Date de dernière modification
@@ -51,6 +53,8 @@ interface Site {
 ### Validation
 
 - **name** : Chaîne de caractères non vide, unique
+- **address** : Chaîne de caractères optionnelle
+- **city** : Chaîne de caractères optionnelle
 - **isActive** : Booléen (par défaut : `true`)
 
 ---
@@ -80,6 +84,8 @@ GET /sites
   {
     "id": "uuid",
     "name": "Centre Paris 15",
+    "address": "123 Rue de Vaugirard",
+    "city": "Paris",
     "isActive": true,
     "createdAt": "2024-01-15T10:00:00.000Z",
     "updatedAt": "2024-02-20T14:30:00.000Z",
@@ -90,6 +96,8 @@ GET /sites
   {
     "id": "uuid",
     "name": "Centre Lyon",
+    "address": "45 Rue de la République",
+    "city": "Lyon",
     "isActive": false,
     "createdAt": "2024-01-10T09:00:00.000Z",
     "updatedAt": null,
@@ -165,6 +173,8 @@ GET /sites/:id
 {
   "id": "uuid",
   "name": "Centre Paris 15",
+  "address": "123 Rue de Vaugirard",
+  "city": "Paris",
   "isActive": true,
   "createdAt": "2024-01-15T10:00:00.000Z",
   "updatedAt": "2024-02-20T14:30:00.000Z",
@@ -223,12 +233,16 @@ POST /sites
 ```json
 {
   "name": "Centre Marseille",        // Obligatoire
-  "isActive": true                   // Optionnel (default: true)
+  "address": "10 Boulevard Longchamp", // Optionnel
+  "city": "Marseille",                // Optionnel
+  "isActive": true                    // Optionnel (default: true)
 }
 ```
 
 **Validation** :
 - `name` : Non vide, unique dans la base de données
+- `address` : Chaîne de caractères optionnelle
+- `city` : Chaîne de caractères optionnelle
 - `isActive` : Booléen optionnel
 
 **Réponse** : Objet site créé
@@ -236,6 +250,8 @@ POST /sites
 {
   "id": "uuid",
   "name": "Centre Marseille",
+  "address": "10 Boulevard Longchamp",
+  "city": "Marseille",
   "isActive": true,
   "createdAt": "2024-03-15T10:00:00.000Z",
   "updatedAt": null,
@@ -252,14 +268,19 @@ POST /sites
 
 **Utilisation** :
 ```typescript
-async function createSite(name: string, isActive: boolean = true) {
+async function createSite(
+  name: string, 
+  address?: string, 
+  city?: string, 
+  isActive: boolean = true
+) {
   const response = await fetch('/sites', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ name, isActive })
+    body: JSON.stringify({ name, address, city, isActive })
   });
   
   if (!response.ok) {
@@ -293,7 +314,9 @@ PUT /sites/:id
 ```json
 {
   "name": "Centre Marseille Vieux Port",  // Optionnel
-  "isActive": false                        // Optionnel
+  "address": "12 Quai du Port",           // Optionnel
+  "city": "Marseille",                    // Optionnel
+  "isActive": false                       // Optionnel
 }
 ```
 
@@ -309,7 +332,7 @@ PUT /sites/:id
 ```typescript
 async function updateSite(
   siteId: string, 
-  updates: { name?: string; isActive?: boolean }
+  updates: { name?: string; address?: string; city?: string; isActive?: boolean }
 ) {
   const response = await fetch(`/sites/${siteId}`, {
     method: 'PUT',
@@ -477,6 +500,12 @@ const SitesList: React.FC = () => {
             className={`site-card ${!site.isActive ? 'inactive' : ''}`}
           >
             <h3>{site.name}</h3>
+            {site.city && (
+              <p className="location">📍 {site.city}</p>
+            )}
+            {site.address && (
+              <p className="address">{site.address}</p>
+            )}
             <p className="stats">
               📅 {site._count.sessions} session(s)
             </p>
@@ -520,6 +549,8 @@ interface SiteFormProps {
 const SiteForm: React.FC<SiteFormProps> = ({ siteId, onSuccess }) => {
   const [formData, setFormData] = useState({
     name: '',
+    address: '',
+    city: '',
     isActive: true
   });
   const [loading, setLoading] = useState(false);
@@ -542,6 +573,8 @@ const SiteForm: React.FC<SiteFormProps> = ({ siteId, onSuccess }) => {
       const site = await response.json();
       setFormData({
         name: site.name,
+        address: site.address || '',
+        city: site.city || '',
         isActive: site.isActive
       });
     } catch (error) {
@@ -580,7 +613,7 @@ const SiteForm: React.FC<SiteFormProps> = ({ siteId, onSuccess }) => {
 
       // Réinitialiser le formulaire en mode création
       if (!siteId) {
-        setFormData({ name: '', isActive: true });
+        setFormData({ name: '', address: '', city: '', isActive: true });
       }
     } catch (error: any) {
       setError(error.message || 'Une erreur est survenue');
@@ -604,6 +637,28 @@ const SiteForm: React.FC<SiteFormProps> = ({ siteId, onSuccess }) => {
           onChange={(e) => setFormData({...formData, name: e.target.value})}
           placeholder="Ex: Centre Paris 15"
           required
+        />
+      </div>
+
+      <div className="form-group">
+        <label htmlFor="address">Adresse</label>
+        <input
+          id="address"
+          type="text"
+          value={formData.address}
+          onChange={(e) => setFormData({...formData, address: e.target.value})}
+          placeholder="Ex: 123 Rue de Vaugirard"
+        />
+      </div>
+
+      <div className="form-group">
+        <label htmlFor="city">Ville</label>
+        <input
+          id="city"
+          type="text"
+          value={formData.city}
+          onChange={(e) => setFormData({...formData, city: e.target.value})}
+          placeholder="Ex: Paris"
         />
       </div>
 

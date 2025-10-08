@@ -68,6 +68,8 @@ fetch('/sites', {
   },
   body: JSON.stringify({
     name: 'Centre Paris 15',
+    address: '123 Rue de Vaugirard',
+    city: 'Paris',
     isActive: true
   })
 });
@@ -81,6 +83,8 @@ fetch(`/sites/${siteId}`, {
   },
   body: JSON.stringify({
     name: 'Nouveau nom',
+    address: '456 Rue Neuve',
+    city: 'Lyon',
     isActive: false
   })
 });
@@ -183,6 +187,8 @@ fetch(`/sessions/${sessionId}/admin-register`, {
 {
   id: string;
   name: string;              // Unique
+  address: string | null;    // Adresse
+  city: string | null;       // Ville
   isActive: boolean;
   createdAt: string;
   updatedAt: string | null;

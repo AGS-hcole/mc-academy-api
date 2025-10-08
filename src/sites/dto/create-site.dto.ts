@@ -6,6 +6,16 @@ export class CreateSiteDto {
   @IsString()
   name: string;
 
+  @ApiPropertyOptional({ description: 'Adresse du site' })
+  @IsOptional()
+  @IsString()
+  address?: string;
+
+  @ApiPropertyOptional({ description: 'Ville du site' })
+  @IsOptional()
+  @IsString()
+  city?: string;
+
   @ApiPropertyOptional({ description: 'Site actif', default: true })
   @IsOptional()
   @IsBoolean()
