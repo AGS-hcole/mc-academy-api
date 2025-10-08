@@ -91,7 +91,8 @@ model User {
 model Site {
   id        String   @id @default(uuid())
   name      String
-  // optional: address fields
+  address   String?
+  city      String?
   isActive  Boolean  @default(true)
 
   sessions  Session[]

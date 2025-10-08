@@ -60,6 +60,8 @@ export class SitesService {
       return await this.prisma.site.create({
         data: {
           name: dto.name,
+          address: dto.address,
+          city: dto.city,
           isActive: dto.isActive ?? true,
         },
         include: {
