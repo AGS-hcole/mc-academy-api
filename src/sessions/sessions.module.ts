@@ -5,9 +5,11 @@ import { SessionsController } from './sessions.controller';
 import { SessionsCron } from './sessions.cron';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { NotificationsService } from 'src/notifications/notifications.service';
+import { AuthModule } from 'src/auth/auth.module';
 
 @Module({
   controllers: [SessionsController],
+  imports: [AuthModule],
   providers: [
     SessionsService,
     SessionsCron,

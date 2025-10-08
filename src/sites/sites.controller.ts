@@ -7,10 +7,12 @@ import {
   Delete,
   Param,
   Body,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { SitesService } from './sites.service';
 import { CreateSiteDto, UpdateSiteDto } from './dto';
+import { AuthGuard } from 'src/auth/guards/auth.guards';
 
 @ApiTags('sites')
 @Controller('sites')
@@ -18,6 +20,7 @@ export class SitesController {
   constructor(private readonly sitesService: SitesService) {}
 
   @Get()
+  @UseGuards(AuthGuard)
   @ApiOperation({ summary: 'Get all sites' })
   @ApiResponse({ status: 200, description: 'List of all sites' })
   async findAll() {

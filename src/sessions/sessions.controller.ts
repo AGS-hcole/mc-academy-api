@@ -9,6 +9,8 @@ import {
   Body,
   Query,
   Req,
+  UseGuards,
+  UnauthorizedException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -18,8 +20,10 @@ import {
   ApiBody,
 } from '@nestjs/swagger';
 import { SessionsService } from './sessions.service';
-import { AttendanceStatus, SessionSlot } from '@prisma/client';
+import { SessionSlot } from '@prisma/client';
 import { CreateSessionDto, UpdateSessionDto, AdminRegisterDto } from './dto';
+import { AuthGuard } from 'src/auth/guards/auth.guards';
+import { RsvpDto } from './dto/rsvp.dto';
 
 @ApiTags('sessions')
 @Controller('sessions')
@@ -27,6 +31,7 @@ export class SessionsController {
   constructor(private readonly sessions: SessionsService) {}
 
   @Get('upcoming')
+  @UseGuards(AuthGuard)
   @ApiOperation({ summary: 'Get upcoming sessions' })
   @ApiResponse({ status: 200, description: 'List of upcoming sessions' })
   async getUpcoming() {
@@ -34,6 +39,7 @@ export class SessionsController {
   }
 
   @Get()
+  @UseGuards(AuthGuard)
   @ApiOperation({ summary: 'Get sessions with optional filters' })
   @ApiQuery({
     name: 'siteId',
@@ -94,49 +100,52 @@ export class SessionsController {
   }
 
   @Get(':id')
+  @UseGuards(AuthGuard)
   async getSession(@Param('id') id: string) {
     return this.sessions.getSessionById(id);
   }
 
   @Post()
+  @UseGuards(AuthGuard)
   @ApiOperation({ summary: 'Create a new session (admin only)' })
   @ApiBody({ type: CreateSessionDto })
   @ApiResponse({ status: 201, description: 'Session created successfully' })
   @ApiResponse({ status: 400, description: 'Invalid input data' })
   @ApiResponse({ status: 404, description: 'Site not found' })
-  // @UseGuards(AdminGuard) // Uncomment when admin guard is available
   async createSession(@Body() dto: CreateSessionDto) {
     return this.sessions.createSession(dto);
   }
 
   @Put(':id')
-  // @UseGuards(AdminGuard) // Uncomment when admin guard is available
+  @UseGuards(AuthGuard)
   async updateSession(@Param('id') id: string, @Body() dto: UpdateSessionDto) {
     return this.sessions.updateSession(id, dto);
   }
 
   @Delete(':id')
-  // @UseGuards(AdminGuard) // Uncomment when admin guard is available
+  @UseGuards(AuthGuard)
   async deleteSession(@Param('id') id: string) {
     return this.sessions.deleteSession(id);
   }
 
   @Post(':id/rsvp')
+  @UseGuards(AuthGuard)
   async rsvp(
     @Param('id') sessionId: string,
-    @Req() req: any, // replace with your AuthGuard user
-    @Body() body: { status: AttendanceStatus; comment?: string },
+    @Req() req: any,
+    @Body() body: RsvpDto,
   ) {
-    const userId = req.user.id;
+    const userId = req.user?.id ?? req.user?.sub;
+    if (!userId) throw new UnauthorizedException('User missing');
     return this.sessions.rsvp(sessionId, userId, body.status, body.comment);
   }
 
   @Post(':id/admin-register')
-  // @UseGuards(AdminGuard) // Uncomment when admin guard is available
+  @UseGuards(AuthGuard)
   async adminRegister(
     @Param('id') sessionId: string,
     @Body() dto: AdminRegisterDto,
-    @Req() req: any, // replace with your AuthGuard user
+    @Req() req: any,
   ) {
     const adminUser = req.user;
     return this.sessions.adminRegister(sessionId, dto, adminUser);

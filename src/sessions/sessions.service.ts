@@ -198,8 +198,6 @@ export class SessionsService {
     });
     if (!session) throw new NotFoundException('Session not found');
 
-    // Cutoff = Friday 18:00 local
-    //const cutoff = zonedTimeToUtc(this._computeCutoff(session.date), tz);
     const cutoff = this._computeCutoff(session.date);
     if (isBefore(cutoff, new Date())) {
       throw new ForbiddenException('Cutoff passed');
@@ -208,14 +206,35 @@ export class SessionsService {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
 
+    // ✅ Validation runtime: status requis + valeur d'énum valide
+    if (!status || !Object.values(AttendanceStatus).includes(status)) {
+      throw new BadRequestException('Invalid or missing status');
+    }
+
     const outOfContract =
       (user.formula === 'MORNING' && session.slot === 'PM') ||
       (user.formula === 'AFTERNOON' && session.slot === 'AM');
 
+    // ✅ Omettre les clés undefined dans update/create
+    const updateData: any = {
+      outOfContract,
+      respondedAt: new Date(),
+      ...(status !== undefined ? { status } : {}),
+      ...(comment !== undefined ? { comment } : {}),
+    };
+
+    const createData: any = {
+      sessionId,
+      userId,
+      status, // requis en create
+      outOfContract,
+      ...(comment !== undefined ? { comment } : {}),
+    };
+
     return this.prisma.attendance.upsert({
       where: { sessionId_userId: { sessionId, userId } },
-      update: { status, comment, outOfContract, respondedAt: new Date() },
-      create: { sessionId, userId, status, comment, outOfContract },
+      update: updateData,
+      create: createData,
     });
   }
 
