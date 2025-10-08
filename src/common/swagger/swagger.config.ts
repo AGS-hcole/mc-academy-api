@@ -2,7 +2,7 @@ const customfavIcon = '';
 
 const customCss = ``;
 
-const customSiteTitle = 'YellowScan Software API Documentation';
+const customSiteTitle = 'MyCenter Academy API Documentation';
 const swaggerOptions = {
   customfavIcon,
   customCss,
@@ -11,7 +11,7 @@ const swaggerOptions = {
     persistAuthorization: true,
   },
 };
-const swaggerTitle = 'YellowScan Software API Documentation';
+const swaggerTitle = 'MyCenter Academy API Documentation';
 const swaggerDescription = ``;
 
 export { swaggerOptions, swaggerTitle, swaggerDescription };
