@@ -136,18 +136,25 @@ export class SessionsController {
     @Body() body: RsvpDto,
   ) {
     const userId = req.user?.id ?? req.user?.sub;
+
     if (!userId) throw new UnauthorizedException('User missing');
-    return this.sessions.rsvp(sessionId, userId, body.status, body.comment);
+
+    await this.sessions.rsvp(sessionId, userId, body.status, body.comment);
+
+    return this.sessions.getSessionById(sessionId);
   }
 
-  @Post(':id/admin-register')
+  @Post(':id/admin-rsvp')
   @UseGuards(AuthGuard)
-  async adminRegister(
+  async adminRsvp(
     @Param('id') sessionId: string,
     @Body() dto: AdminRegisterDto,
     @Req() req: any,
   ) {
     const adminUser = req.user;
-    return this.sessions.adminRegister(sessionId, dto, adminUser);
+
+    await this.sessions.adminRegister(sessionId, dto, adminUser);
+
+    return this.sessions.getSessionById(sessionId);
   }
 }

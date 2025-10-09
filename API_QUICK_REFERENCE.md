@@ -3,6 +3,7 @@
 ## 🔐 Authentification
 
 Tous les appels nécessitent un token JWT :
+
 ```http
 Authorization: Bearer <jwt_token>
 ```
@@ -13,32 +14,32 @@ Authorization: Bearer <jwt_token>
 
 ### Sites
 
-| Endpoint | Méthode | Auth | Description |
-|----------|---------|------|-------------|
-| `/sites` | GET | ✅ | Tous les sites |
-| `/sites/active` | GET | ✅ | Sites actifs uniquement |
-| `/sites/:id` | GET | ✅ | Détails d'un site |
-| `/sites` | POST | 🔒 Admin | Créer un site |
-| `/sites/:id` | PUT | 🔒 Admin | Modifier un site |
-| `/sites/:id` | DELETE | 🔒 Admin | Supprimer un site |
+| Endpoint        | Méthode | Auth     | Description             |
+| --------------- | ------- | -------- | ----------------------- |
+| `/sites`        | GET     | ✅       | Tous les sites          |
+| `/sites/active` | GET     | ✅       | Sites actifs uniquement |
+| `/sites/:id`    | GET     | ✅       | Détails d'un site       |
+| `/sites`        | POST    | 🔒 Admin | Créer un site           |
+| `/sites/:id`    | PUT     | 🔒 Admin | Modifier un site        |
+| `/sites/:id`    | DELETE  | 🔒 Admin | Supprimer un site       |
 
 ### Sessions (Public)
 
-| Endpoint | Méthode | Auth | Description |
-|----------|---------|------|-------------|
-| `/sessions/upcoming` | GET | ✅ | Sessions à venir |
-| `/sessions` | GET | ✅ | Sessions avec filtres |
-| `/sessions/:id` | GET | ✅ | Détails d'une session |
-| `/sessions/:id/rsvp` | POST | ✅ | S'inscrire à une session |
+| Endpoint             | Méthode | Auth | Description              |
+| -------------------- | ------- | ---- | ------------------------ |
+| `/sessions/upcoming` | GET     | ✅   | Sessions à venir         |
+| `/sessions`          | GET     | ✅   | Sessions avec filtres    |
+| `/sessions/:id`      | GET     | ✅   | Détails d'une session    |
+| `/sessions/:id/rsvp` | POST    | ✅   | S'inscrire à une session |
 
 ### Sessions (Admin)
 
-| Endpoint | Méthode | Auth | Description |
-|----------|---------|------|-------------|
-| `/sessions` | POST | 🔒 Admin | Créer une session |
-| `/sessions/:id` | PUT | 🔒 Admin | Modifier une session |
-| `/sessions/:id` | DELETE | 🔒 Admin | Supprimer une session |
-| `/sessions/:id/admin-register` | POST | 🔒 Admin | Inscrire un utilisateur |
+| Endpoint                   | Méthode | Auth     | Description             |
+| -------------------------- | ------- | -------- | ----------------------- |
+| `/sessions`                | POST    | 🔒 Admin | Créer une session       |
+| `/sessions/:id`            | PUT     | 🔒 Admin | Modifier une session    |
+| `/sessions/:id`            | DELETE  | 🔒 Admin | Supprimer une session   |
+| `/sessions/:id/admin-rsvp` | POST    | 🔒 Admin | Inscrire un utilisateur |
 
 ---
 
@@ -49,50 +50,50 @@ Authorization: Bearer <jwt_token>
 ```javascript
 // 1. Récupérer tous les sites
 fetch('/sites', {
-  headers: { 'Authorization': `Bearer ${token}` }
+  headers: { Authorization: `Bearer ${token}` },
 })
-.then(res => res.json())
-.then(sites => console.log(sites));
+  .then(res => res.json())
+  .then(sites => console.log(sites));
 
 // 2. Récupérer les sites actifs
 fetch('/sites/active', {
-  headers: { 'Authorization': `Bearer ${token}` }
+  headers: { Authorization: `Bearer ${token}` },
 });
 
 // 3. Créer un site (Admin)
 fetch('/sites', {
   method: 'POST',
   headers: {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json'
+    Authorization: `Bearer ${token}`,
+    'Content-Type': 'application/json',
   },
   body: JSON.stringify({
     name: 'Centre Paris 15',
     address: '123 Rue de Vaugirard',
     city: 'Paris',
-    isActive: true
-  })
+    isActive: true,
+  }),
 });
 
 // 4. Modifier un site (Admin)
 fetch(`/sites/${siteId}`, {
   method: 'PUT',
   headers: {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json'
+    Authorization: `Bearer ${token}`,
+    'Content-Type': 'application/json',
   },
   body: JSON.stringify({
     name: 'Nouveau nom',
     address: '456 Rue Neuve',
     city: 'Lyon',
-    isActive: false
-  })
+    isActive: false,
+  }),
 });
 
 // 5. Supprimer un site (Admin)
 fetch(`/sites/${siteId}`, {
   method: 'DELETE',
-  headers: { 'Authorization': `Bearer ${token}` }
+  headers: { Authorization: `Bearer ${token}` },
 });
 ```
 
@@ -102,10 +103,10 @@ fetch(`/sites/${siteId}`, {
 
 ```javascript
 fetch('/sessions/upcoming', {
-  headers: { 'Authorization': `Bearer ${token}` }
+  headers: { Authorization: `Bearer ${token}` },
 })
-.then(res => res.json())
-.then(sessions => console.log(sessions));
+  .then(res => res.json())
+  .then(sessions => console.log(sessions));
 ```
 
 ### 2. Filtrer les sessions
@@ -116,11 +117,11 @@ const params = new URLSearchParams({
   slot: 'AM',
   startDate: '2024-03-01',
   endDate: '2024-03-31',
-  isPublished: 'true'
+  isPublished: 'true',
 });
 
 fetch(`/sessions?${params}`, {
-  headers: { 'Authorization': `Bearer ${token}` }
+  headers: { Authorization: `Bearer ${token}` },
 });
 ```
 
@@ -130,13 +131,13 @@ fetch(`/sessions?${params}`, {
 fetch(`/sessions/${sessionId}/rsvp`, {
   method: 'POST',
   headers: {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json'
+    Authorization: `Bearer ${token}`,
+    'Content-Type': 'application/json',
   },
   body: JSON.stringify({
     status: 'YES',
-    comment: 'Je serai présent !'
-  })
+    comment: 'Je serai présent !',
+  }),
 });
 ```
 
@@ -146,8 +147,8 @@ fetch(`/sessions/${sessionId}/rsvp`, {
 fetch('/sessions', {
   method: 'POST',
   headers: {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json'
+    Authorization: `Bearer ${token}`,
+    'Content-Type': 'application/json',
   },
   body: JSON.stringify({
     siteId: 'uuid-du-site',
@@ -156,25 +157,25 @@ fetch('/sessions', {
     startTime: '2024-03-20T09:30:00.000Z',
     endTime: '2024-03-20T11:30:00.000Z',
     notes: 'Session spéciale',
-    isPublished: true
-  })
+    isPublished: true,
+  }),
 });
 ```
 
 ### 5. Inscription admin (bypass restrictions)
 
 ```javascript
-fetch(`/sessions/${sessionId}/admin-register`, {
+fetch(`/sessions/${sessionId}/admin-rsvp`, {
   method: 'POST',
   headers: {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json'
+    Authorization: `Bearer ${token}`,
+    'Content-Type': 'application/json',
   },
   body: JSON.stringify({
     userId: 'uuid-utilisateur',
     status: 'YES',
-    comment: 'Inscription manuelle'
-  })
+    comment: 'Inscription manuelle',
+  }),
 });
 ```
 
@@ -183,6 +184,7 @@ fetch(`/sessions/${sessionId}/admin-register`, {
 ## 📊 Modèles de Données
 
 ### Site
+
 ```typescript
 {
   id: string;
@@ -198,6 +200,7 @@ fetch(`/sessions/${sessionId}/admin-register`, {
 ```
 
 ### Session
+
 ```typescript
 {
   id: string;
@@ -215,6 +218,7 @@ fetch(`/sessions/${sessionId}/admin-register`, {
 ```
 
 ### Attendance
+
 ```typescript
 {
   id: string;
@@ -228,6 +232,7 @@ fetch(`/sessions/${sessionId}/admin-register`, {
 ```
 
 ### User
+
 ```typescript
 {
   id: string;
@@ -244,20 +249,24 @@ fetch(`/sessions/${sessionId}/admin-register`, {
 ## ⚙️ Règles Métier
 
 ### Heures par défaut
+
 - **AM** : 9h00 - 12h00
 - **PM** : 14h00 - 17h00
 
 ### Cutoff
+
 - **Date limite** : Vendredi 18h00 de la semaine de la session
 - Les admins peuvent bypasser le cutoff
 
 ### Formules
+
 - **MORNING** → Sessions AM seulement
 - **AFTERNOON** → Sessions PM seulement
 - **FULL** → Toutes les sessions
 - Inscription hors formule → `outOfContract: true`
 
 ### Permissions
+
 - **Utilisateurs** : Consulter et s'inscrire (avec restrictions)
 - **Admins** : Toutes les opérations sans restrictions
 
@@ -265,13 +274,13 @@ fetch(`/sessions/${sessionId}/admin-register`, {
 
 ## ❌ Codes d'Erreur
 
-| Code | Message | Action |
-|------|---------|--------|
-| 400 | Bad Request | Vérifier les données |
-| 401 | Unauthorized | Se reconnecter |
-| 403 | Forbidden | Cutoff passé ou pas les droits |
-| 404 | Not Found | Ressource inexistante |
-| 500 | Server Error | Réessayer plus tard |
+| Code | Message      | Action                         |
+| ---- | ------------ | ------------------------------ |
+| 400  | Bad Request  | Vérifier les données           |
+| 401  | Unauthorized | Se reconnecter                 |
+| 403  | Forbidden    | Cutoff passé ou pas les droits |
+| 404  | Not Found    | Ressource inexistante          |
+| 500  | Server Error | Réessayer plus tard            |
 
 ---
 

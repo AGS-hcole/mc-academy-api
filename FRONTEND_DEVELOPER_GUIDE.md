@@ -1,4 +1,5 @@
 # Guide de Développement Frontend - MyCenter Academy
+
 ## Documentation Complète pour l'Interface de Gestion des Sessions d'Entraînement
 
 ---
@@ -34,22 +35,22 @@ L'API MyCenter Academy permet de gérer complètement les sessions d'entraîneme
 
 ```typescript
 interface Session {
-  id: string;                    // UUID de la session
-  siteId: string;                // UUID du site
-  date: string;                  // Date de la session (ISO 8601)
-  slot: 'AM' | 'PM';            // Créneau matin ou après-midi
-  startTime: string | null;      // Heure de début (ISO 8601) - optionnel
-  endTime: string | null;        // Heure de fin (ISO 8601) - optionnel
-  isPublished: boolean;          // Session publiée ?
-  publishedAt: string | null;    // Date de publication
-  isCanceled: boolean;           // Session annulée ?
-  notes: string | null;          // Notes administratives
-  createdAt: string;             // Date de création
-  updatedAt: string | null;      // Date de dernière modification
-  
+  id: string; // UUID de la session
+  siteId: string; // UUID du site
+  date: string; // Date de la session (ISO 8601)
+  slot: 'AM' | 'PM'; // Créneau matin ou après-midi
+  startTime: string | null; // Heure de début (ISO 8601) - optionnel
+  endTime: string | null; // Heure de fin (ISO 8601) - optionnel
+  isPublished: boolean; // Session publiée ?
+  publishedAt: string | null; // Date de publication
+  isCanceled: boolean; // Session annulée ?
+  notes: string | null; // Notes administratives
+  createdAt: string; // Date de création
+  updatedAt: string | null; // Date de dernière modification
+
   // Relations
-  site: Site;                    // Informations du site
-  attendances: Attendance[];     // Liste des inscriptions
+  site: Site; // Informations du site
+  attendances: Attendance[]; // Liste des inscriptions
 }
 ```
 
@@ -57,9 +58,9 @@ interface Session {
 
 ```typescript
 interface Site {
-  id: string;                    // UUID du site
-  name: string;                  // Nom du site
-  isActive: boolean;             // Site actif ?
+  id: string; // UUID du site
+  name: string; // Nom du site
+  isActive: boolean; // Site actif ?
   createdAt: string;
   updatedAt: string | null;
 }
@@ -69,21 +70,21 @@ interface Site {
 
 ```typescript
 interface User {
-  id: string;                    // UUID de l'utilisateur
-  role: 'user' | 'admin';       // Rôle de l'utilisateur
-  firstname: string;             // Prénom
-  lastname: string;              // Nom
-  email: string;                 // Email unique
-  phone: string | null;          // Téléphone
-  birthDate: string | null;      // Date de naissance
+  id: string; // UUID de l'utilisateur
+  role: 'user' | 'admin'; // Rôle de l'utilisateur
+  firstname: string; // Prénom
+  lastname: string; // Nom
+  email: string; // Email unique
+  phone: string | null; // Téléphone
+  birthDate: string | null; // Date de naissance
   fftLicenseNumber: string | null; // Numéro de licence FFT
   formula: 'MORNING' | 'AFTERNOON' | 'FULL' | null; // Formule d'abonnement
-  
+
   // Préférences de notification
   notifyEmail: boolean;
   notifySMS: boolean;
   notifyWhatsApp: boolean;
-  
+
   createdAt: string;
   updatedAt: string | null;
 }
@@ -93,20 +94,20 @@ interface User {
 
 ```typescript
 interface Attendance {
-  id: string;                    // UUID de l'inscription
-  sessionId: string;             // UUID de la session
-  userId: string;                // UUID de l'utilisateur
-  status: 'YES' | 'NO';         // Présence confirmée ou non
-  comment: string | null;        // Commentaire de l'utilisateur
-  respondedAt: string;           // Date de réponse
-  outOfContract: boolean;        // Hors formule (facturation extra)
-  createdByAdmin: boolean;       // Inscription faite par admin ?
+  id: string; // UUID de l'inscription
+  sessionId: string; // UUID de la session
+  userId: string; // UUID de l'utilisateur
+  status: 'YES' | 'NO'; // Présence confirmée ou non
+  comment: string | null; // Commentaire de l'utilisateur
+  respondedAt: string; // Date de réponse
+  outOfContract: boolean; // Hors formule (facturation extra)
+  createdByAdmin: boolean; // Inscription faite par admin ?
   createdAt: string;
   updatedAt: string | null;
-  
+
   // Relations
-  user: User;                    // Informations de l'utilisateur
-  session: Session;              // Informations de la session
+  user: User; // Informations de l'utilisateur
+  session: Session; // Informations de la session
 }
 ```
 
@@ -115,27 +116,27 @@ interface Attendance {
 ```typescript
 // Créneaux de session
 enum SessionSlot {
-  AM = 'AM',        // Matin (9h00-12h00 par défaut)
-  PM = 'PM'         // Après-midi (14h00-17h00 par défaut)
+  AM = 'AM', // Matin (9h00-12h00 par défaut)
+  PM = 'PM', // Après-midi (14h00-17h00 par défaut)
 }
 
 // Statut de présence
 enum AttendanceStatus {
-  YES = 'YES',      // Présent
-  NO = 'NO'         // Absent
+  YES = 'YES', // Présent
+  NO = 'NO', // Absent
 }
 
 // Type de formule
 enum FormulaType {
-  MORNING = 'MORNING',       // Accès AM uniquement
-  AFTERNOON = 'AFTERNOON',   // Accès PM uniquement
-  FULL = 'FULL'             // Accès AM + PM
+  MORNING = 'MORNING', // Accès AM uniquement
+  AFTERNOON = 'AFTERNOON', // Accès PM uniquement
+  FULL = 'FULL', // Accès AM + PM
 }
 
 // Rôles utilisateur
 enum Role {
   user = 'user',
-  admin = 'admin'
+  admin = 'admin',
 }
 ```
 
@@ -154,6 +155,7 @@ Authorization: Bearer <jwt_token>
 ### Permissions par rôle
 
 #### Utilisateur Standard (`user`)
+
 - ✅ Consulter les sessions publiées
 - ✅ S'inscrire aux sessions correspondant à sa formule
 - ✅ Voir ses propres inscriptions
@@ -161,6 +163,7 @@ Authorization: Bearer <jwt_token>
 - ❌ Inscrire d'autres utilisateurs
 
 #### Administrateur (`admin`)
+
 - ✅ Toutes les permissions utilisateur
 - ✅ Créer, modifier, supprimer des sessions
 - ✅ Inscrire n'importe quel utilisateur sans restriction
@@ -172,6 +175,7 @@ Authorization: Bearer <jwt_token>
 ## API Endpoints
 
 ### Base URL
+
 ```
 https://api.mc-academy.com
 ```
@@ -187,6 +191,7 @@ GET /sessions/upcoming
 **Authentification** : Requise
 
 **Réponse** :
+
 ```json
 [
   {
@@ -248,6 +253,7 @@ GET /sessions?siteId={siteId}&startDate={startDate}&endDate={endDate}&slot={slot
 | `isCanceled` | boolean | Non | Sessions annulées | `?isCanceled=false` |
 
 **Exemples** :
+
 ```http
 # Sessions du matin en mars 2024
 GET /sessions?slot=AM&startDate=2024-03-01&endDate=2024-03-31
@@ -274,11 +280,13 @@ GET /sessions/:id
 **Authentification** : Requise
 
 **Paramètres** :
+
 - `id` (path) : UUID de la session
 
 **Réponse** : Objet session complet (voir format ci-dessus)
 
 **Codes d'erreur** :
+
 - `404` : Session non trouvée
 
 ---
@@ -294,19 +302,21 @@ POST /sessions
 **Authentification** : Requise (Admin)
 
 **Body** :
+
 ```json
 {
-  "siteId": "uuid",                              // Obligatoire
-  "date": "2024-03-20T00:00:00.000Z",           // Obligatoire (ISO 8601)
-  "slot": "AM",                                  // Obligatoire ("AM" ou "PM")
-  "startTime": "2024-03-20T09:30:00.000Z",      // Optionnel (ISO 8601)
-  "endTime": "2024-03-20T11:30:00.000Z",        // Optionnel (ISO 8601)
-  "notes": "Session spéciale débutants",         // Optionnel
-  "isPublished": true                            // Optionnel (default: false)
+  "siteId": "uuid", // Obligatoire
+  "date": "2024-03-20T00:00:00.000Z", // Obligatoire (ISO 8601)
+  "slot": "AM", // Obligatoire ("AM" ou "PM")
+  "startTime": "2024-03-20T09:30:00.000Z", // Optionnel (ISO 8601)
+  "endTime": "2024-03-20T11:30:00.000Z", // Optionnel (ISO 8601)
+  "notes": "Session spéciale débutants", // Optionnel
+  "isPublished": true // Optionnel (default: false)
 }
 ```
 
 **Validation** :
+
 - `siteId` doit exister
 - `date` doit être au format ISO 8601
 - `slot` doit être "AM" ou "PM"
@@ -316,6 +326,7 @@ POST /sessions
 **Réponse** : Objet session créé
 
 **Codes d'erreur** :
+
 - `400` : Données invalides ou session déjà existante
 - `401` : Non authentifié
 - `403` : Pas les droits admin
@@ -334,25 +345,28 @@ PUT /sessions/:id
 **Authentification** : Requise (Admin)
 
 **Paramètres** :
+
 - `id` (path) : UUID de la session
 
 **Body** : Tous les champs sont optionnels
+
 ```json
 {
-  "siteId": "uuid",                        // Optionnel
-  "date": "2024-03-21T00:00:00.000Z",     // Optionnel
-  "slot": "PM",                            // Optionnel
+  "siteId": "uuid", // Optionnel
+  "date": "2024-03-21T00:00:00.000Z", // Optionnel
+  "slot": "PM", // Optionnel
   "startTime": "2024-03-21T14:00:00.000Z", // Optionnel
-  "endTime": "2024-03-21T16:00:00.000Z",   // Optionnel
-  "notes": "Session modifiée",             // Optionnel
-  "isPublished": true,                     // Optionnel
-  "isCanceled": false                      // Optionnel
+  "endTime": "2024-03-21T16:00:00.000Z", // Optionnel
+  "notes": "Session modifiée", // Optionnel
+  "isPublished": true, // Optionnel
+  "isCanceled": false // Optionnel
 }
 ```
 
 **Réponse** : Objet session mis à jour
 
 **Codes d'erreur** :
+
 - `400` : Données invalides
 - `401` : Non authentifié
 - `403` : Pas les droits admin
@@ -371,9 +385,11 @@ DELETE /sessions/:id
 **Authentification** : Requise (Admin)
 
 **Paramètres** :
+
 - `id` (path) : UUID de la session
 
 **Réponse** :
+
 ```json
 {
   "message": "Session deleted successfully"
@@ -381,6 +397,7 @@ DELETE /sessions/:id
 ```
 
 **Codes d'erreur** :
+
 - `401` : Non authentifié
 - `403` : Pas les droits admin
 - `404` : Session non trouvée
@@ -398,17 +415,20 @@ POST /sessions/:id/rsvp
 **Authentification** : Requise
 
 **Paramètres** :
+
 - `id` (path) : UUID de la session
 
 **Body** :
+
 ```json
 {
-  "status": "YES",                    // Obligatoire ("YES" ou "NO")
-  "comment": "Je serai présent !"     // Optionnel
+  "status": "YES", // Obligatoire ("YES" ou "NO")
+  "comment": "Je serai présent !" // Optionnel
 }
 ```
 
 **Règles de validation** :
+
 1. ✅ La session doit exister
 2. ✅ Le cutoff (vendredi 18h00) ne doit pas être passé
 3. ✅ L'utilisateur doit avoir une formule correspondante :
@@ -418,6 +438,7 @@ POST /sessions/:id/rsvp
 4. ⚠️ Si l'utilisateur s'inscrit hors formule, `outOfContract` sera `true`
 
 **Réponse** :
+
 ```json
 {
   "id": "uuid",
@@ -432,6 +453,7 @@ POST /sessions/:id/rsvp
 ```
 
 **Codes d'erreur** :
+
 - `401` : Non authentifié
 - `403` : Cutoff passé ou formule non compatible
 - `404` : Session ou utilisateur non trouvé
@@ -441,7 +463,7 @@ POST /sessions/:id/rsvp
 ### 8. Inscription administrative (Admin uniquement)
 
 ```http
-POST /sessions/:id/admin-register
+POST /sessions/:id/admin-rsvp
 ```
 
 **Description** : Inscription forcée par un administrateur (bypass toutes les restrictions)
@@ -449,24 +471,28 @@ POST /sessions/:id/admin-register
 **Authentification** : Requise (Admin)
 
 **Paramètres** :
+
 - `id` (path) : UUID de la session
 
 **Body** :
+
 ```json
 {
-  "userId": "uuid",                   // Obligatoire
-  "status": "YES",                    // Obligatoire ("YES" ou "NO")
-  "comment": "Inscription manuelle"   // Optionnel
+  "userId": "uuid", // Obligatoire
+  "status": "YES", // Obligatoire ("YES" ou "NO")
+  "comment": "Inscription manuelle" // Optionnel
 }
 ```
 
 **Différences avec l'inscription normale** :
+
 - ✅ Bypass du cutoff (vendredi 18h00)
 - ✅ Bypass de la validation de formule
 - ✅ Peut inscrire n'importe quel utilisateur
 - ✅ `createdByAdmin` sera `true`
 
 **Réponse** :
+
 ```json
 {
   "id": "uuid",
@@ -481,6 +507,7 @@ POST /sessions/:id/admin-register
 ```
 
 **Codes d'erreur** :
+
 - `401` : Non authentifié
 - `403` : Pas les droits admin
 - `404` : Session ou utilisateur non trouvé
@@ -507,10 +534,10 @@ graph TD
 async function fetchUpcomingSessions() {
   const response = await fetch('/sessions/upcoming', {
     headers: {
-      'Authorization': `Bearer ${token}`
-    }
+      Authorization: `Bearer ${token}`,
+    },
   });
-  
+
   const sessions = await response.json();
   return sessions;
 }
@@ -538,22 +565,26 @@ graph TD
 **Implémentation recommandée** :
 
 ```typescript
-async function registerToSession(sessionId: string, status: 'YES' | 'NO', comment?: string) {
+async function registerToSession(
+  sessionId: string,
+  status: 'YES' | 'NO',
+  comment?: string,
+) {
   try {
     const response = await fetch(`/sessions/${sessionId}/rsvp`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ status, comment })
+      body: JSON.stringify({ status, comment }),
     });
-    
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.message);
     }
-    
+
     return await response.json();
   } catch (error) {
     // Gérer les erreurs (cutoff, formule, etc.)
@@ -589,17 +620,17 @@ async function createSession(data: CreateSessionDto) {
   const response = await fetch('/sessions', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
     },
-    body: JSON.stringify(data)
+    body: JSON.stringify(data),
   });
-  
+
   if (!response.ok) {
     const error = await response.json();
     throw new Error(error.message);
   }
-  
+
   return await response.json();
 }
 ```
@@ -615,7 +646,7 @@ graph TD
     C --> D[Sélectionner utilisateur]
     D --> E[Choisir statut YES/NO]
     E --> F[Ajouter commentaire optionnel]
-    F --> G[POST /sessions/:id/admin-register]
+    F --> G[POST /sessions/:id/admin-rsvp]
     G --> H[Confirmation]
 ```
 
@@ -638,7 +669,7 @@ interface Session {
     name: string;
   };
   attendances: Array<{
-    user: { firstname: string; lastname: string; };
+    user: { firstname: string; lastname: string };
   }>;
 }
 
@@ -647,7 +678,7 @@ const SessionsList: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState({
     slot: '',
-    siteId: ''
+    siteId: '',
   });
 
   useEffect(() => {
@@ -660,13 +691,13 @@ const SessionsList: React.FC = () => {
       const params = new URLSearchParams();
       if (filter.slot) params.append('slot', filter.slot);
       if (filter.siteId) params.append('siteId', filter.siteId);
-      
+
       const response = await fetch(`/sessions/upcoming?${params}`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
       });
-      
+
       const data = await response.json();
       setSessions(data);
     } catch (error) {
@@ -680,7 +711,7 @@ const SessionsList: React.FC = () => {
     if (!dateString) return null;
     return new Date(dateString).toLocaleTimeString('fr-FR', {
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   };
 
@@ -688,19 +719,19 @@ const SessionsList: React.FC = () => {
     return new Date(dateString).toLocaleDateString('fr-FR', {
       weekday: 'long',
       day: 'numeric',
-      month: 'long'
+      month: 'long',
     });
   };
 
   return (
     <div className="sessions-list">
       <h1>Sessions d'Entraînement</h1>
-      
+
       {/* Filtres */}
       <div className="filters">
-        <select 
-          value={filter.slot} 
-          onChange={(e) => setFilter({...filter, slot: e.target.value})}
+        <select
+          value={filter.slot}
+          onChange={e => setFilter({ ...filter, slot: e.target.value })}
         >
           <option value="">Tous les créneaux</option>
           <option value="AM">Matin</option>
@@ -719,7 +750,8 @@ const SessionsList: React.FC = () => {
               <p className="date">{formatDate(session.date)}</p>
               <p className="time">
                 {session.slot === 'AM' ? '🌅 Matin' : '☀️ Après-midi'}
-                {session.startTime && ` (${formatTime(session.startTime)} - ${formatTime(session.endTime)})`}
+                {session.startTime &&
+                  ` (${formatTime(session.startTime)} - ${formatTime(session.endTime)})`}
               </p>
               <p className="attendees">
                 👥 {session.attendances.length} inscrit(s)
@@ -753,19 +785,19 @@ const CreateSessionForm: React.FC = () => {
     startTime: '',
     endTime: '',
     notes: '',
-    isPublished: false
+    isPublished: false,
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       // Construire le payload
       const payload: any = {
         siteId: formData.siteId,
         date: new Date(formData.date).toISOString(),
         slot: formData.slot,
-        isPublished: formData.isPublished
+        isPublished: formData.isPublished,
       };
 
       // Ajouter les heures si personnalisées
@@ -791,10 +823,10 @@ const CreateSessionForm: React.FC = () => {
       const response = await fetch('/sessions', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
@@ -804,7 +836,7 @@ const CreateSessionForm: React.FC = () => {
 
       const session = await response.json();
       alert('Session créée avec succès !');
-      
+
       // Réinitialiser le formulaire
       setFormData({
         siteId: '',
@@ -813,7 +845,7 @@ const CreateSessionForm: React.FC = () => {
         startTime: '',
         endTime: '',
         notes: '',
-        isPublished: false
+        isPublished: false,
       });
     } catch (error) {
       alert(`Erreur: ${error.message}`);
@@ -826,9 +858,9 @@ const CreateSessionForm: React.FC = () => {
 
       <div className="form-group">
         <label>Site *</label>
-        <select 
+        <select
           value={formData.siteId}
-          onChange={(e) => setFormData({...formData, siteId: e.target.value})}
+          onChange={e => setFormData({ ...formData, siteId: e.target.value })}
           required
         >
           <option value="">Sélectionner un site</option>
@@ -841,7 +873,7 @@ const CreateSessionForm: React.FC = () => {
         <input
           type="date"
           value={formData.date}
-          onChange={(e) => setFormData({...formData, date: e.target.value})}
+          onChange={e => setFormData({ ...formData, date: e.target.value })}
           required
         />
       </div>
@@ -850,7 +882,9 @@ const CreateSessionForm: React.FC = () => {
         <label>Créneau *</label>
         <select
           value={formData.slot}
-          onChange={(e) => setFormData({...formData, slot: e.target.value as 'AM' | 'PM'})}
+          onChange={e =>
+            setFormData({ ...formData, slot: e.target.value as 'AM' | 'PM' })
+          }
         >
           <option value="AM">Matin (9h-12h par défaut)</option>
           <option value="PM">Après-midi (14h-17h par défaut)</option>
@@ -863,7 +897,9 @@ const CreateSessionForm: React.FC = () => {
           <input
             type="time"
             value={formData.startTime}
-            onChange={(e) => setFormData({...formData, startTime: e.target.value})}
+            onChange={e =>
+              setFormData({ ...formData, startTime: e.target.value })
+            }
           />
         </div>
 
@@ -872,7 +908,9 @@ const CreateSessionForm: React.FC = () => {
           <input
             type="time"
             value={formData.endTime}
-            onChange={(e) => setFormData({...formData, endTime: e.target.value})}
+            onChange={e =>
+              setFormData({ ...formData, endTime: e.target.value })
+            }
           />
         </div>
       </div>
@@ -881,7 +919,7 @@ const CreateSessionForm: React.FC = () => {
         <label>Notes</label>
         <textarea
           value={formData.notes}
-          onChange={(e) => setFormData({...formData, notes: e.target.value})}
+          onChange={e => setFormData({ ...formData, notes: e.target.value })}
           placeholder="Informations supplémentaires..."
         />
       </div>
@@ -891,7 +929,9 @@ const CreateSessionForm: React.FC = () => {
           <input
             type="checkbox"
             checked={formData.isPublished}
-            onChange={(e) => setFormData({...formData, isPublished: e.target.checked})}
+            onChange={e =>
+              setFormData({ ...formData, isPublished: e.target.checked })
+            }
           />
           Publier immédiatement
         </label>
@@ -911,13 +951,13 @@ export default CreateSessionForm;
 
 ### Codes HTTP et Messages
 
-| Code | Type | Description | Action recommandée |
-|------|------|-------------|-------------------|
-| `400` | Bad Request | Données invalides | Vérifier le format des données envoyées |
-| `401` | Unauthorized | Non authentifié | Rediriger vers la page de connexion |
-| `403` | Forbidden | Pas les permissions | Afficher message "Accès refusé" |
-| `404` | Not Found | Ressource non trouvée | Afficher message "Non trouvé" |
-| `500` | Server Error | Erreur serveur | Afficher message d'erreur générique |
+| Code  | Type         | Description           | Action recommandée                      |
+| ----- | ------------ | --------------------- | --------------------------------------- |
+| `400` | Bad Request  | Données invalides     | Vérifier le format des données envoyées |
+| `401` | Unauthorized | Non authentifié       | Rediriger vers la page de connexion     |
+| `403` | Forbidden    | Pas les permissions   | Afficher message "Accès refusé"         |
+| `404` | Not Found    | Ressource non trouvée | Afficher message "Non trouvé"           |
+| `500` | Server Error | Erreur serveur        | Afficher message d'erreur générique     |
 
 ### Exemples de messages d'erreur
 
@@ -955,16 +995,20 @@ function handleApiError(error: any) {
   }
 
   const messages: Record<string, string> = {
-    'Cutoff passed': 'La date limite d\'inscription est dépassée (vendredi 18h00)',
-    'Session not found': 'Cette session n\'existe plus',
-    'Site not found': 'Le site sélectionné n\'existe pas',
+    'Cutoff passed':
+      "La date limite d'inscription est dépassée (vendredi 18h00)",
+    'Session not found': "Cette session n'existe plus",
+    'Site not found': "Le site sélectionné n'existe pas",
     'User not found': 'Utilisateur non trouvé',
-    'Start time must be before end time': 'L\'heure de début doit être avant l\'heure de fin',
-    'A session already exists for this site, date, and slot': 'Une session existe déjà pour ce créneau'
+    'Start time must be before end time':
+      "L'heure de début doit être avant l'heure de fin",
+    'A session already exists for this site, date, and slot':
+      'Une session existe déjà pour ce créneau',
   };
 
-  const userMessage = messages[error.message] || error.message || 'Une erreur est survenue';
-  
+  const userMessage =
+    messages[error.message] || error.message || 'Une erreur est survenue';
+
   // Afficher un toast ou une alerte
   showNotification(userMessage, 'error');
 }
@@ -977,6 +1021,7 @@ function handleApiError(error: any) {
 ### 1. Heures par défaut
 
 Si `startTime` et `endTime` ne sont pas spécifiés lors de la création :
+
 - **Matin (AM)** : 9h00 - 12h00
 - **Après-midi (PM)** : 14h00 - 17h00
 
@@ -989,41 +1034,48 @@ Si `startTime` et `endTime` ne sont pas spécifiés lors de la création :
 ```typescript
 function isCutoffPassed(sessionDate: Date): boolean {
   const now = new Date();
-  
+
   // Trouver le vendredi de la semaine de la session
   const sessionDay = new Date(sessionDate);
   const dayOfWeek = sessionDay.getDay(); // 0 = dimanche, 5 = vendredi
   const daysUntilFriday = dayOfWeek >= 5 ? dayOfWeek - 5 : 7 + dayOfWeek - 5;
-  
+
   const fridayCutoff = new Date(sessionDay);
   fridayCutoff.setDate(sessionDay.getDate() - daysUntilFriday);
   fridayCutoff.setHours(18, 0, 0, 0);
-  
+
   return now > fridayCutoff;
 }
 ```
 
 **Affichage UI** :
+
 ```tsx
-{isCutoffPassed(session.date) ? (
-  <p className="warning">⚠️ Inscriptions fermées (cutoff dépassé)</p>
-) : (
-  <button onClick={handleRegister}>S'inscrire</button>
-)}
+{
+  isCutoffPassed(session.date) ? (
+    <p className="warning">⚠️ Inscriptions fermées (cutoff dépassé)</p>
+  ) : (
+    <button onClick={handleRegister}>S'inscrire</button>
+  );
+}
 ```
 
 ### 3. Validation de formule
 
 **Règle** : Un utilisateur peut s'inscrire seulement si :
+
 - Formule `MORNING` → Sessions `AM` uniquement
-- Formule `AFTERNOON` → Sessions `PM` uniquement  
+- Formule `AFTERNOON` → Sessions `PM` uniquement
 - Formule `FULL` → Toutes les sessions
 - Formule `null` → Aucune inscription possible
 
 **Implémentation recommandée** :
 
 ```typescript
-function canUserRegister(userFormula: string | null, sessionSlot: string): {
+function canUserRegister(
+  userFormula: string | null,
+  sessionSlot: string,
+): {
   allowed: boolean;
   outOfContract: boolean;
   message?: string;
@@ -1032,7 +1084,7 @@ function canUserRegister(userFormula: string | null, sessionSlot: string): {
     return {
       allowed: false,
       outOfContract: false,
-      message: 'Vous devez avoir une formule d\'abonnement pour vous inscrire'
+      message: "Vous devez avoir une formule d'abonnement pour vous inscrire",
     };
   }
 
@@ -1052,25 +1104,29 @@ function canUserRegister(userFormula: string | null, sessionSlot: string): {
   return {
     allowed: true,
     outOfContract: true,
-    message: 'Cette session est hors de votre formule et sera facturée en supplément'
+    message:
+      'Cette session est hors de votre formule et sera facturée en supplément',
   };
 }
 ```
 
 **Affichage UI** :
+
 ```tsx
 const registrationInfo = canUserRegister(user.formula, session.slot);
 
-{registrationInfo.allowed ? (
-  <>
-    {registrationInfo.outOfContract && (
-      <p className="warning">⚠️ {registrationInfo.message}</p>
-    )}
-    <button onClick={handleRegister}>S'inscrire</button>
-  </>
-) : (
-  <p className="error">{registrationInfo.message}</p>
-)}
+{
+  registrationInfo.allowed ? (
+    <>
+      {registrationInfo.outOfContract && (
+        <p className="warning">⚠️ {registrationInfo.message}</p>
+      )}
+      <button onClick={handleRegister}>S'inscrire</button>
+    </>
+  ) : (
+    <p className="error">{registrationInfo.message}</p>
+  );
+}
 ```
 
 ### 4. Sessions publiées
@@ -1094,10 +1150,13 @@ const allSessions = sessions;
 **Règle** : Les sessions avec `isCanceled = true` doivent être clairement marquées.
 
 **Affichage UI** :
+
 ```tsx
-{session.isCanceled && (
-  <div className="canceled-badge">❌ Session annulée</div>
-)}
+{
+  session.isCanceled && (
+    <div className="canceled-badge">❌ Session annulée</div>
+  );
+}
 ```
 
 ---
@@ -1111,14 +1170,10 @@ const allSessions = sessions;
 import { useQuery } from 'react-query';
 
 function useSessions(filters: any) {
-  return useQuery(
-    ['sessions', filters],
-    () => fetchSessions(filters),
-    {
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      cacheTime: 10 * 60 * 1000, // 10 minutes
-    }
-  );
+  return useQuery(['sessions', filters], () => fetchSessions(filters), {
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    cacheTime: 10 * 60 * 1000, // 10 minutes
+  });
 }
 ```
 
@@ -1128,11 +1183,11 @@ function useSessions(filters: any) {
 async function registerToSession(sessionId: string, status: string) {
   // Mise à jour optimiste de l'UI
   updateUIOptimistically(sessionId, status);
-  
+
   try {
     await fetch(`/sessions/${sessionId}/rsvp`, {
       method: 'POST',
-      body: JSON.stringify({ status })
+      body: JSON.stringify({ status }),
     });
   } catch (error) {
     // Annuler la mise à jour optimiste
@@ -1169,18 +1224,24 @@ import * as yup from 'yup';
 
 const createSessionSchema = yup.object({
   siteId: yup.string().required('Le site est obligatoire'),
-  date: yup.date().required('La date est obligatoire')
+  date: yup
+    .date()
+    .required('La date est obligatoire')
     .min(new Date(), 'La date doit être dans le futur'),
   slot: yup.string().oneOf(['AM', 'PM']).required(),
   startTime: yup.date().when('endTime', {
     is: (val: any) => !!val,
-    then: schema => schema.required('L\'heure de début est requise')
-      .test('before-end', 'L\'heure de début doit être avant l\'heure de fin',
-        function(value) {
-          return !this.parent.endTime || value < this.parent.endTime;
-        }
-      )
-  })
+    then: schema =>
+      schema
+        .required("L'heure de début est requise")
+        .test(
+          'before-end',
+          "L'heure de début doit être avant l'heure de fin",
+          function (value) {
+            return !this.parent.endTime || value < this.parent.endTime;
+          },
+        ),
+  }),
 });
 ```
 

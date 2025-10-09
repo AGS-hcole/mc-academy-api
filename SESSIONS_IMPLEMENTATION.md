@@ -5,16 +5,19 @@ This document describes the comprehensive training session management implementa
 ## Features Implemented
 
 ### 1. Enhanced Session Model
+
 - **Start and End Times**: Sessions now have optional `startTime` and `endTime` fields
 - **Default Times**: Automatic sessions get default times (AM: 9:00-12:00, PM: 14:00-17:00)
 - **Backward Compatibility**: Existing sessions still work with date + slot
 
 ### 2. Manual Session Creation
+
 - **Admin Session Creation**: Admins can manually create sessions with custom times
 - **Validation**: Proper validation of start/end times and site existence
 - **Conflict Prevention**: Prevents duplicate sessions for same site/date/slot
 
 ### 3. Enhanced RSVP System
+
 - **Formula Validation**: Users can only register for sessions matching their formula
 - **Cutoff Enforcement**: Friday 18:00 cutoff for regular registrations
 - **Admin Override**: Admins can register users bypassing all restrictions
@@ -22,6 +25,7 @@ This document describes the comprehensive training session management implementa
 ### 4. Comprehensive API Endpoints
 
 #### Session Management
+
 - `GET /sessions` - List sessions with filtering
 - `GET /sessions/upcoming` - Get upcoming sessions
 - `GET /sessions/:id` - Get specific session
@@ -30,11 +34,14 @@ This document describes the comprehensive training session management implementa
 - `DELETE /sessions/:id` - Delete session (admin only)
 
 #### Registration
+
 - `POST /sessions/:id/rsvp` - User registration
-- `POST /sessions/:id/admin-register` - Admin registration (bypasses restrictions)
+- `POST /sessions/:id/admin-rsvp` - Admin registration (bypasses restrictions)
 
 ### 5. Query Filters
+
 Sessions can be filtered by:
+
 - Site ID
 - Date range (startDate, endDate)
 - Slot (AM/PM)
@@ -42,6 +49,7 @@ Sessions can be filtered by:
 - Canceled status
 
 ### 6. Database Schema Changes
+
 ```sql
 -- Added to Session table
 startTime   DateTime?    -- specific start time for the session
@@ -51,6 +59,7 @@ endTime     DateTime?    -- specific end time for the session
 ## User Registration Logic
 
 ### Regular Users
+
 1. Must have a valid formula (MORNING, AFTERNOON, FULL)
 2. Can only register for sessions matching their formula:
    - MORNING → AM sessions only
@@ -60,6 +69,7 @@ endTime     DateTime?    -- specific end time for the session
 4. Registration marked as `outOfContract` if formula doesn't match
 
 ### Admin Override
+
 1. Admins can register any user to any session
 2. No formula restrictions
 3. No cutoff restrictions
@@ -68,20 +78,24 @@ endTime     DateTime?    -- specific end time for the session
 ## Session Times
 
 ### Default Times (Auto-generated sessions)
+
 - **AM Sessions**: 9:00 - 12:00
 - **PM Sessions**: 14:00 - 17:00
 
 ### Custom Times
+
 - Admins can set custom start/end times when creating sessions
 - Times are validated (start must be before end)
 
 ## API Documentation
+
 - Full Swagger documentation added
 - Request/response schemas defined
 - Error responses documented
 - Query parameters documented
 
 ## Backward Compatibility
+
 - Existing sessions without start/end times still work
 - Migration updates existing sessions with default times
 - All existing functionality preserved
@@ -89,6 +103,7 @@ endTime     DateTime?    -- specific end time for the session
 ## Usage Examples
 
 ### Create a Session
+
 ```json
 POST /sessions
 {
@@ -103,8 +118,9 @@ POST /sessions
 ```
 
 ### Admin Register User
+
 ```json
-POST /sessions/:sessionId/admin-register
+POST /sessions/:sessionId/admin-rsvp
 {
   "userId": "user-uuid",
   "status": "YES",
@@ -113,6 +129,7 @@ POST /sessions/:sessionId/admin-register
 ```
 
 ### Filter Sessions
+
 ```
 GET /sessions?siteId=uuid&slot=AM&isPublished=true&startDate=2024-03-01&endDate=2024-03-31
 ```
