@@ -11,6 +11,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { RolesModule } from './roles/roles.module';
 import { SessionsModule } from './sessions/sessions.module';
 import { SitesModule } from './sites/sites.module';
+import { ReportsModule } from './reports/reports.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { SitesModule } from './sites/sites.module';
     RolesModule,
     SessionsModule,
     SitesModule,
+    ReportsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

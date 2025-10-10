@@ -7,14 +7,16 @@ import {
   Param,
   Delete,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags, ApiQuery, ApiOperation } from '@nestjs/swagger';
 import { User } from './entities/user.entity';
 import { AuthGuard } from 'src/auth/guards/auth.guards';
 import { GetUser } from 'src/auth/decorators/get-user.decorator';
+import { AdminGuard } from 'src/auth/guards/admin.guard';
 
 @ApiBearerAuth()
 @ApiTags('Users')
@@ -38,6 +40,27 @@ export class UserController {
   @UseGuards(AuthGuard)
   getAll() {
     return this.userService.findAll();
+  }
+
+  @Get('lookup')
+  @UseGuards(AdminGuard)
+  @ApiOperation({ summary: 'Lookup users with filters (Admin only)' })
+  @ApiQuery({ name: 'role', required: false, description: 'Filter by role' })
+  @ApiQuery({ name: 'search', required: false, description: 'Search by name or email' })
+  @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number' })
+  @ApiQuery({ name: 'pageSize', required: false, type: Number, description: 'Page size' })
+  lookup(
+    @Query('role') role?: string,
+    @Query('search') search?: string,
+    @Query('page') page?: string,
+    @Query('pageSize') pageSize?: string,
+  ) {
+    return this.userService.lookup({
+      role,
+      search,
+      page: page ? parseInt(page, 10) : 1,
+      pageSize: pageSize ? parseInt(pageSize, 10) : 20,
+    });
   }
 
   @Get(':id')
