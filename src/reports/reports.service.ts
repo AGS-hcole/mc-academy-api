@@ -1,6 +1,8 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
+import { toZonedTime } from 'date-fns-tz';
+import { startOfDay, addDays, format } from 'date-fns';
 import {
   SessionsQueryDto,
   SessionsTimeseriesQueryDto,
@@ -12,6 +14,8 @@ import {
 
 @Injectable()
 export class ReportsService {
+  private readonly TIMEZONE = 'Europe/Paris';
+
   constructor(private prisma: PrismaService) {}
 
   /**
@@ -40,41 +44,62 @@ export class ReportsService {
       }
     }
 
-    // Execute parallel queries for counts
-    const [
-      totalSessions,
-      underContractCount,
-      offContractCount,
-      uniqueUsersData,
-    ] = await Promise.all([
-      // Total sessions count - filtered by contractScope
-      this.countSessionsByFilters(fromDate, toDate, userId, contractScope),
+    // Build base where clause for sessions
+    const baseWhere = this.buildSessionWhereClause(fromDate, toDate, userId);
 
-      // Under contract sessions - only if contractScope allows
-      contractScope === 'off'
-        ? Promise.resolve(0)
-        : this.countSessionsByContractType(fromDate, toDate, userId, false),
+    // Get all sessions with their attendances
+    const sessions = await this.prisma.session.findMany({
+      where: baseWhere,
+      include: {
+        attendances: {
+          select: {
+            userId: true,
+            outOfContract: true,
+          },
+        },
+      },
+    });
 
-      // Off contract sessions - only if contractScope allows
-      contractScope === 'under'
-        ? Promise.resolve(0)
-        : this.countSessionsByContractType(fromDate, toDate, userId, true),
+    // Process sessions to categorize and count
+    let underContractCount = 0;
+    let offContractCount = 0;
+    const uniqueUserIds = new Set<string>();
 
-      // Unique users with attendance
-      this.countUniqueUsers(fromDate, toDate, userId, contractScope),
-    ]);
+    for (const session of sessions) {
+      // Collect unique user IDs
+      session.attendances.forEach(att => uniqueUserIds.add(att.userId));
+
+      // Determine if session is under or off contract
+      const hasOffContract = session.attendances.some(att => att.outOfContract);
+
+      if (hasOffContract) {
+        offContractCount++;
+      } else {
+        underContractCount++;
+      }
+    }
+
+    // Apply contract scope filter to counts
+    let totalSessions = sessions.length;
+    if (contractScope === 'under') {
+      totalSessions = underContractCount;
+      offContractCount = 0;
+    } else if (contractScope === 'off') {
+      totalSessions = offContractCount;
+      underContractCount = 0;
+    }
 
     return {
       period: {
         from,
         to,
-        timezone: 'Europe/Paris',
+        timezone: this.TIMEZONE,
       },
       totals: {
         sessions: totalSessions,
         underContract: underContractCount,
         offContract: offContractCount,
-        uniqueUsers: uniqueUsersData,
+        uniqueUsers: uniqueUserIds.size,
       },
     };
   }
@@ -95,62 +120,60 @@ export class ReportsService {
       throw new BadRequestException('from date must be before to date');
     }
 
-    // Build SQL query for time series
-    // We use raw SQL for better performance with time zone conversions and grouping
-    const userJoin = userId
-      ? `JOIN "Attendance" a ON a."sessionId" = s."id" AND a."userId" = $3`
-      : '';
-    const contractFilter = this.buildContractFilter(contractScope);
+    // Build where clause
+    const where = this.buildSessionWhereClause(fromDate, toDate, userId);
 
-    const params: any[] = [fromDate, toDate];
-    if (userId) {
-      params.push(userId);
+    // Get all sessions with attendances
+    const sessions = await this.prisma.session.findMany({
+      where,
+      select: {
+        id: true,
+        startTime: true,
+        date: true,
+        attendances: {
+          select: {
+            outOfContract: true,
+          },
+        },
+      },
+    });
+
+    // Group sessions by day in Europe/Paris timezone
+    const dailyData = new Map<
+      string,
+      { total: number; under: number; off: number }
+    >();
+
+    for (const session of sessions) {
+      const sessionTime = session.startTime || session.date;
+      // Convert to Paris timezone and get the date string
+      const parisTime = toZonedTime(sessionTime, this.TIMEZONE);
+      const dayStart = startOfDay(parisTime);
+      const dateKey = format(dayStart, 'yyyy-MM-dd');
+
+      // Determine contract type
+      const hasOffContract = session.attendances.some(att => att.outOfContract);
+
+      // Apply contract scope filter
+      if (contractScope === 'under' && hasOffContract) continue;
+      if (contractScope === 'off' && !hasOffContract) continue;
+
+      // Update daily counts
+      if (!dailyData.has(dateKey)) {
+        dailyData.set(dateKey, { total: 0, under: 0, off: 0 });
+      }
+
+      const data = dailyData.get(dateKey)!;
+      data.total++;
+      if (hasOffContract) {
+        data.off++;
+      } else {
+        data.under++;
+      }
     }
 
-    const query_sql = `
-      WITH date_buckets AS (
-        SELECT 
-          (date_trunc('day', s."startTime" AT TIME ZONE 'Europe/Paris')) AS day,
-          s.id,
-          EXISTS(
-            SELECT 1 FROM "Attendance" att 
-            WHERE att."sessionId" = s.id AND att."outOfContract" = true
-          ) as has_off_contract
-        FROM "Session" s
-        ${userJoin}
-        WHERE s."startTime" >= $1 AND s."startTime" < $2
-          ${contractFilter}
-        ${userId ? 'GROUP BY s.id, s."startTime"' : ''}
-      ),
-      aggregated AS (
-        SELECT 
-          day,
-          COUNT(*) as total,
-          SUM(CASE WHEN has_off_contract = false THEN 1 ELSE 0 END) as under,
-          SUM(CASE WHEN has_off_contract = true THEN 1 ELSE 0 END) as off
-        FROM date_buckets
-        GROUP BY day
-      )
-      SELECT 
-        to_char(day AT TIME ZONE 'Europe/Paris', 'YYYY-MM-DD') as date,
-        total::int,
-        under::int as "underContract",
-        off::int as "offContract"
-      FROM aggregated
-      ORDER BY day ASC
-    `;
-
-    const rows = await this.prisma.$queryRawUnsafe<
-      Array<{
-        date: string;
-        total: number;
-        underContract: number;
-        offContract: number;
-      }>
-    >(query_sql, ...params);
-
-    // Fill gaps with zero-value buckets
-    const buckets = this.fillDateGaps(rows, fromDate, toDate);
+    // Fill gaps and create buckets array
+    const buckets = this.fillDateGapsWithTimeZone(dailyData, fromDate, toDate);
 
     return { buckets };
   }
@@ -189,66 +212,42 @@ export class ReportsService {
     // Build where clause
     const where = this.buildSessionWhereClause(fromDate, toDate, userId);
 
-    // For contractScope filtering, we need to use a raw query approach
-    // since it depends on attendance data
-    let sessionIds: string[] | undefined;
+    // Get sessions with attendances for contract filtering
+    const allSessions = await this.prisma.session.findMany({
+      where,
+      orderBy,
+      include: {
+        site: { select: { name: true } },
+        attendances: { select: { outOfContract: true } },
+        _count: { select: { attendances: true } },
+      },
+    });
+
+    // Filter by contract scope if specified
+    let filteredSessions = allSessions;
     if (contractScope && contractScope !== 'all') {
-      // Get session IDs that match the contract scope
-      const contractFilter = this.buildContractFilter(contractScope);
-      const userJoin = userId
-        ? `JOIN "Attendance" ua ON ua."sessionId" = s.id AND ua."userId" = $3`
-        : '';
-      const params: any[] = [fromDate, toDate];
-      if (userId) {
-        params.push(userId);
-      }
-
-      const query_sql = `
-        SELECT DISTINCT s.id
-        FROM "Session" s
-        ${userJoin}
-        WHERE s."startTime" >= $1 AND s."startTime" < $2
-          ${contractFilter}
-      `;
-
-      const result = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
-        query_sql,
-        ...params,
-      );
-      sessionIds = result.map(r => r.id);
-
-      // If no sessions match, return empty result
-      if (sessionIds.length === 0) {
-        return {
-          items: [],
-          total: 0,
-          page,
-          pageSize,
-        };
-      }
-
-      // Add session ID filter to where clause
-      where.id = { in: sessionIds };
+      filteredSessions = allSessions.filter(session => {
+        const hasOffContract = session.attendances.some(
+          att => att.outOfContract,
+        );
+        if (contractScope === 'under') {
+          return !hasOffContract;
+        } else if (contractScope === 'off') {
+          return hasOffContract;
+        }
+        return true;
+      });
     }
 
-    // Execute queries in parallel
-    const [sessions, total] = await Promise.all([
-      this.prisma.session.findMany({
-        where,
-        orderBy,
-        skip: (page - 1) * pageSize,
-        take: pageSize,
-        include: {
-          site: { select: { name: true } },
-          _count: { select: { attendances: true } },
-          attendances: { select: { outOfContract: true } },
-        },
-      }),
-      this.prisma.session.count({ where }),
-    ]);
+    // Apply pagination
+    const total = filteredSessions.length;
+    const paginatedSessions = filteredSessions.slice(
+      (page - 1) * pageSize,
+      page * pageSize,
+    );
 
     // Map to response format
-    const items = sessions.map(session => {
+    const items = paginatedSessions.map(session => {
       // Determine contract type based on attendances
       const hasOffContract = session.attendances.some(a => a.outOfContract);
       const contractType = hasOffContract ? 'OFF' : 'UNDER';
@@ -298,72 +297,14 @@ export class ReportsService {
       where.attendances = { some: { userId } };
     }
 
-    // Contract scope filtering is complex - we'll handle it differently
-    // since it's based on attendance.outOfContract, not session level
-    // We'll apply it in queries where needed
-
     return where;
   }
 
   /**
-   * Helper: Build contract filter for SQL
+   * Helper: Fill gaps in date buckets with zero values using timezone awareness
    */
-  private buildContractFilter(contractScope?: string): string {
-    if (contractScope === 'under') {
-      return `AND NOT EXISTS(SELECT 1 FROM "Attendance" att WHERE att."sessionId" = s.id AND att."outOfContract" = true)`;
-    } else if (contractScope === 'off') {
-      return `AND EXISTS(SELECT 1 FROM "Attendance" att WHERE att."sessionId" = s.id AND att."outOfContract" = true)`;
-    }
-    return '';
-  }
-
-  /**
-   * Helper: Count sessions by contract type
-   */
-  private async countSessionsByContractType(
-    fromDate: Date,
-    toDate: Date,
-    userId: string | undefined,
-    isOffContract: boolean,
-  ): Promise<number> {
-    const userJoin = userId
-      ? `JOIN "Attendance" ua ON ua."sessionId" = s.id AND ua."userId" = $3`
-      : '';
-    const params: any[] = [fromDate, toDate];
-    if (userId) {
-      params.push(userId);
-    }
-
-    const condition = isOffContract
-      ? `EXISTS(SELECT 1 FROM "Attendance" att WHERE att."sessionId" = s.id AND att."outOfContract" = true)`
-      : `NOT EXISTS(SELECT 1 FROM "Attendance" att WHERE att."sessionId" = s.id AND att."outOfContract" = true)`;
-
-    const query_sql = `
-      SELECT COUNT(DISTINCT s.id)::int as count
-      FROM "Session" s
-      ${userJoin}
-      WHERE s."startTime" >= $1 AND s."startTime" < $2
-        AND ${condition}
-    `;
-
-    const result = await this.prisma.$queryRawUnsafe<Array<{ count: number }>>(
-      query_sql,
-      ...params,
-    );
-
-    return result[0]?.count || 0;
-  }
-
-  /**
-   * Helper: Fill gaps in date buckets with zero values
-   */
-  private fillDateGaps(
-    rows: Array<{
-      date: string;
-      total: number;
-      underContract: number;
-      offContract: number;
-    }>,
+  private fillDateGapsWithTimeZone(
+    dailyData: Map<string, { total: number; under: number; off: number }>,
     fromDate: Date,
     toDate: Date,
   ): Array<{
@@ -378,97 +319,31 @@ export class ReportsService {
       underContract: number;
       offContract: number;
     }> = [];
-    const dataMap = new Map(rows.map(r => [r.date, r]));
 
-    // Convert to Paris timezone for bucketing
-    const current = new Date(fromDate);
-    const end = new Date(toDate);
+    // Convert UTC dates to Paris timezone
+    const parisFromDate = toZonedTime(fromDate, this.TIMEZONE);
+    const parisToDate = toZonedTime(toDate, this.TIMEZONE);
+
+    // Get start of day in Paris timezone
+    let current = startOfDay(parisFromDate);
+    const end = startOfDay(parisToDate);
 
     while (current < end) {
-      const dateStr = current.toISOString().split('T')[0]; // YYYY-MM-DD format
+      const dateStr = format(current, 'yyyy-MM-dd');
 
-      if (dataMap.has(dateStr)) {
-        result.push(dataMap.get(dateStr)!);
-      } else {
-        result.push({
-          date: dateStr,
-          total: 0,
-          underContract: 0,
-          offContract: 0,
-        });
-      }
+      const data = dailyData.get(dateStr);
+
+      result.push({
+        date: dateStr,
+        total: data?.total || 0,
+        underContract: data?.under || 0,
+        offContract: data?.off || 0,
+      });
 
       // Move to next day
-      current.setDate(current.getDate() + 1);
+      current = addDays(current, 1);
     }
 
     return result;
-  }
-
-  /**
-   * Helper: Count sessions with contract scope filter
-   */
-  private async countSessionsByFilters(
-    fromDate: Date,
-    toDate: Date,
-    userId: string | undefined,
-    contractScope?: string,
-  ): Promise<number> {
-    const userJoin = userId
-      ? `JOIN "Attendance" ua ON ua."sessionId" = s.id AND ua."userId" = $3`
-      : '';
-    const contractFilter = this.buildContractFilter(contractScope);
-    const params: any[] = [fromDate, toDate];
-    if (userId) {
-      params.push(userId);
-    }
-
-    const query_sql = `
-      SELECT COUNT(DISTINCT s.id)::int as count
-      FROM "Session" s
-      ${userJoin}
-      WHERE s."startTime" >= $1 AND s."startTime" < $2
-        ${contractFilter}
-    `;
-
-    const result = await this.prisma.$queryRawUnsafe<Array<{ count: number }>>(
-      query_sql,
-      ...params,
-    );
-
-    return result[0]?.count || 0;
-  }
-
-  /**
-   * Helper: Count unique users with attendance
-   */
-  private async countUniqueUsers(
-    fromDate: Date,
-    toDate: Date,
-    userId: string | undefined,
-    contractScope?: string,
-  ): Promise<number> {
-    const userFilter = userId ? `AND a."userId" = $3` : '';
-    const contractFilter = this.buildContractFilter(contractScope);
-    const params: any[] = [fromDate, toDate];
-    if (userId) {
-      params.push(userId);
-    }
-
-    const query_sql = `
-      SELECT COUNT(DISTINCT a."userId")::int as count
-      FROM "Attendance" a
-      JOIN "Session" s ON s.id = a."sessionId"
-      WHERE s."startTime" >= $1 AND s."startTime" < $2
-        ${userFilter}
-        ${contractFilter}
-    `;
-
-    const result = await this.prisma.$queryRawUnsafe<Array<{ count: number }>>(
-      query_sql,
-      ...params,
-    );
-
-    return result[0]?.count || 0;
   }
 }
