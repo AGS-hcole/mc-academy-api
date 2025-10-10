@@ -1,5 +1,10 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { ReportsService } from './reports.service';
 import { AdminGuard } from '../auth/guards/admin.guard';
 import {
@@ -25,7 +30,9 @@ export class ReportsController {
     description: 'Returns summary statistics for sessions in the date range',
     type: SessionsSummaryDto,
   })
-  async getSummary(@Query() query: SessionsQueryDto): Promise<SessionsSummaryDto> {
+  async getSummary(
+    @Query() query: SessionsQueryDto,
+  ): Promise<SessionsSummaryDto> {
     return this.reportsService.getSessionsSummary(query);
   }
 
@@ -49,7 +56,9 @@ export class ReportsController {
     description: 'Returns paginated list of sessions',
     type: SessionsListDto,
   })
-  async getList(@Query() query: SessionsListQueryDto): Promise<SessionsListDto> {
+  async getList(
+    @Query() query: SessionsListQueryDto,
+  ): Promise<SessionsListDto> {
     return this.reportsService.getSessionsList(query);
   }
 }

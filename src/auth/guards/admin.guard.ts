@@ -11,7 +11,7 @@ export class AdminGuard extends AuthGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     // First check authentication
     const isAuthenticated = await super.canActivate(context);
-    
+
     if (!isAuthenticated) {
       return false;
     }

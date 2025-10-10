@@ -130,15 +130,15 @@ export class UserService {
     pageSize?: number;
   }) {
     const { role, search, page = 1, pageSize = 20 } = params || {};
-    
+
     try {
       const where: any = {};
-      
+
       // Filter by role if provided
       if (role) {
         where.role = role;
       }
-      
+
       // Search by name or email
       if (search && search.trim()) {
         where.OR = [
@@ -160,10 +160,7 @@ export class UserService {
           },
           skip: (page - 1) * pageSize,
           take: pageSize,
-          orderBy: [
-            { lastname: 'asc' },
-            { firstname: 'asc' },
-          ],
+          orderBy: [{ lastname: 'asc' }, { firstname: 'asc' }],
         }),
         this.prisma.user.count({ where }),
       ]);

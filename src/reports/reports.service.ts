@@ -25,7 +25,7 @@ export class ReportsService {
     // Validate date range
     const fromDate = new Date(from);
     const toDate = new Date(to);
-    
+
     if (fromDate >= toDate) {
       throw new BadRequestException('from date must be before to date');
     }
@@ -40,9 +40,6 @@ export class ReportsService {
       }
     }
 
-    // Build base where clause
-    const baseWhere = this.buildSessionWhereClause(fromDate, toDate, userId, contractScope);
-
     // Execute parallel queries for counts
     const [
       totalSessions,
@@ -50,26 +47,21 @@ export class ReportsService {
       offContractCount,
       uniqueUsersData,
     ] = await Promise.all([
-      // Total sessions count
-      this.prisma.session.count({ where: baseWhere }),
-      
-      // Under contract sessions - sessions where all attendances have outOfContract = false
-      this.countSessionsByContractType(fromDate, toDate, userId, false),
-      
-      // Off contract sessions - sessions where any attendance has outOfContract = true
-      this.countSessionsByContractType(fromDate, toDate, userId, true),
-      
+      // Total sessions count - filtered by contractScope
+      this.countSessionsByFilters(fromDate, toDate, userId, contractScope),
+
+      // Under contract sessions - only if contractScope allows
+      contractScope === 'off'
+        ? Promise.resolve(0)
+        : this.countSessionsByContractType(fromDate, toDate, userId, false),
+
+      // Off contract sessions - only if contractScope allows
+      contractScope === 'under'
+        ? Promise.resolve(0)
+        : this.countSessionsByContractType(fromDate, toDate, userId, true),
+
       // Unique users with attendance
-      this.prisma.attendance.findMany({
-        where: {
-          session: {
-            startTime: { gte: fromDate, lt: toDate },
-            ...(userId ? { attendances: { some: { userId } } } : {}),
-          },
-        },
-        select: { userId: true },
-        distinct: ['userId'],
-      }),
+      this.countUniqueUsers(fromDate, toDate, userId, contractScope),
     ]);
 
     return {
@@ -82,7 +74,7 @@ export class ReportsService {
         sessions: totalSessions,
         underContract: underContractCount,
         offContract: offContractCount,
-        uniqueUsers: uniqueUsersData.length,
+        uniqueUsers: uniqueUsersData,
       },
     };
   }
@@ -98,16 +90,18 @@ export class ReportsService {
     // Validate date range
     const fromDate = new Date(from);
     const toDate = new Date(to);
-    
+
     if (fromDate >= toDate) {
       throw new BadRequestException('from date must be before to date');
     }
 
     // Build SQL query for time series
     // We use raw SQL for better performance with time zone conversions and grouping
-    const userJoin = userId ? `JOIN "Attendance" a ON a."sessionId" = s."id" AND a."userId" = $3` : '';
+    const userJoin = userId
+      ? `JOIN "Attendance" a ON a."sessionId" = s."id" AND a."userId" = $3`
+      : '';
     const contractFilter = this.buildContractFilter(contractScope);
-    
+
     const params: any[] = [fromDate, toDate];
     if (userId) {
       params.push(userId);
@@ -147,7 +141,12 @@ export class ReportsService {
     `;
 
     const rows = await this.prisma.$queryRawUnsafe<
-      Array<{ date: string; total: number; underContract: number; offContract: number }>
+      Array<{
+        date: string;
+        total: number;
+        underContract: number;
+        offContract: number;
+      }>
     >(query_sql, ...params);
 
     // Fill gaps with zero-value buckets
@@ -159,27 +158,78 @@ export class ReportsService {
   /**
    * Get paginated list of sessions
    */
-  async getSessionsList(
-    query: SessionsListQueryDto,
-  ): Promise<SessionsListDto> {
-    const { from, to, userId, contractScope, page = 1, pageSize = 25, sort = 'date:desc' } = query;
+  async getSessionsList(query: SessionsListQueryDto): Promise<SessionsListDto> {
+    const {
+      from,
+      to,
+      userId,
+      contractScope,
+      page = 1,
+      pageSize = 25,
+      sort = 'date:desc',
+    } = query;
 
     // Validate date range
     const fromDate = new Date(from);
     const toDate = new Date(to);
-    
+
     if (fromDate >= toDate) {
       throw new BadRequestException('from date must be before to date');
     }
 
     // Parse sort parameter
     const [sortField, sortDir] = sort.split(':');
-    const orderBy = sortField === 'date' 
-      ? { startTime: sortDir === 'asc' ? 'asc' as const : 'desc' as const }
-      : { startTime: 'desc' as const };
+    const orderBy =
+      sortField === 'date'
+        ? {
+            startTime: sortDir === 'asc' ? ('asc' as const) : ('desc' as const),
+          }
+        : { startTime: 'desc' as const };
 
     // Build where clause
-    const where = this.buildSessionWhereClause(fromDate, toDate, userId, contractScope);
+    const where = this.buildSessionWhereClause(fromDate, toDate, userId);
+
+    // For contractScope filtering, we need to use a raw query approach
+    // since it depends on attendance data
+    let sessionIds: string[] | undefined;
+    if (contractScope && contractScope !== 'all') {
+      // Get session IDs that match the contract scope
+      const contractFilter = this.buildContractFilter(contractScope);
+      const userJoin = userId
+        ? `JOIN "Attendance" ua ON ua."sessionId" = s.id AND ua."userId" = $3`
+        : '';
+      const params: any[] = [fromDate, toDate];
+      if (userId) {
+        params.push(userId);
+      }
+
+      const query_sql = `
+        SELECT DISTINCT s.id
+        FROM "Session" s
+        ${userJoin}
+        WHERE s."startTime" >= $1 AND s."startTime" < $2
+          ${contractFilter}
+      `;
+
+      const result = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
+        query_sql,
+        ...params,
+      );
+      sessionIds = result.map(r => r.id);
+
+      // If no sessions match, return empty result
+      if (sessionIds.length === 0) {
+        return {
+          items: [],
+          total: 0,
+          page,
+          pageSize,
+        };
+      }
+
+      // Add session ID filter to where clause
+      where.id = { in: sessionIds };
+    }
 
     // Execute queries in parallel
     const [sessions, total] = await Promise.all([
@@ -198,17 +248,20 @@ export class ReportsService {
     ]);
 
     // Map to response format
-    const items = sessions.map((session) => {
+    const items = sessions.map(session => {
       // Determine contract type based on attendances
       const hasOffContract = session.attendances.some(a => a.outOfContract);
       const contractType = hasOffContract ? 'OFF' : 'UNDER';
 
       // Format title - use site name and slot info
       const title = `${session.site.name} - ${session.slot}`;
-      
+
       // Format status
-      const status = session.isCanceled ? 'CANCELLED' : 
-                     session.isPublished ? 'PUBLISHED' : 'SCHEDULED';
+      const status = session.isCanceled
+        ? 'CANCELLED'
+        : session.isPublished
+          ? 'PUBLISHED'
+          : 'SCHEDULED';
 
       return {
         id: session.id,
@@ -235,7 +288,6 @@ export class ReportsService {
     fromDate: Date,
     toDate: Date,
     userId?: string,
-    contractScope?: string,
   ): Prisma.SessionWhereInput {
     const where: Prisma.SessionWhereInput = {
       startTime: { gte: fromDate, lt: toDate },
@@ -274,7 +326,9 @@ export class ReportsService {
     userId: string | undefined,
     isOffContract: boolean,
   ): Promise<number> {
-    const userJoin = userId ? `JOIN "Attendance" ua ON ua."sessionId" = s.id AND ua."userId" = $3` : '';
+    const userJoin = userId
+      ? `JOIN "Attendance" ua ON ua."sessionId" = s.id AND ua."userId" = $3`
+      : '';
     const params: any[] = [fromDate, toDate];
     if (userId) {
       params.push(userId);
@@ -304,11 +358,26 @@ export class ReportsService {
    * Helper: Fill gaps in date buckets with zero values
    */
   private fillDateGaps(
-    rows: Array<{ date: string; total: number; underContract: number; offContract: number }>,
+    rows: Array<{
+      date: string;
+      total: number;
+      underContract: number;
+      offContract: number;
+    }>,
     fromDate: Date,
     toDate: Date,
-  ): Array<{ date: string; total: number; underContract: number; offContract: number }> {
-    const result: Array<{ date: string; total: number; underContract: number; offContract: number }> = [];
+  ): Array<{
+    date: string;
+    total: number;
+    underContract: number;
+    offContract: number;
+  }> {
+    const result: Array<{
+      date: string;
+      total: number;
+      underContract: number;
+      offContract: number;
+    }> = [];
     const dataMap = new Map(rows.map(r => [r.date, r]));
 
     // Convert to Paris timezone for bucketing
@@ -317,7 +386,7 @@ export class ReportsService {
 
     while (current < end) {
       const dateStr = current.toISOString().split('T')[0]; // YYYY-MM-DD format
-      
+
       if (dataMap.has(dateStr)) {
         result.push(dataMap.get(dateStr)!);
       } else {
@@ -334,5 +403,72 @@ export class ReportsService {
     }
 
     return result;
+  }
+
+  /**
+   * Helper: Count sessions with contract scope filter
+   */
+  private async countSessionsByFilters(
+    fromDate: Date,
+    toDate: Date,
+    userId: string | undefined,
+    contractScope?: string,
+  ): Promise<number> {
+    const userJoin = userId
+      ? `JOIN "Attendance" ua ON ua."sessionId" = s.id AND ua."userId" = $3`
+      : '';
+    const contractFilter = this.buildContractFilter(contractScope);
+    const params: any[] = [fromDate, toDate];
+    if (userId) {
+      params.push(userId);
+    }
+
+    const query_sql = `
+      SELECT COUNT(DISTINCT s.id)::int as count
+      FROM "Session" s
+      ${userJoin}
+      WHERE s."startTime" >= $1 AND s."startTime" < $2
+        ${contractFilter}
+    `;
+
+    const result = await this.prisma.$queryRawUnsafe<Array<{ count: number }>>(
+      query_sql,
+      ...params,
+    );
+
+    return result[0]?.count || 0;
+  }
+
+  /**
+   * Helper: Count unique users with attendance
+   */
+  private async countUniqueUsers(
+    fromDate: Date,
+    toDate: Date,
+    userId: string | undefined,
+    contractScope?: string,
+  ): Promise<number> {
+    const userFilter = userId ? `AND a."userId" = $3` : '';
+    const contractFilter = this.buildContractFilter(contractScope);
+    const params: any[] = [fromDate, toDate];
+    if (userId) {
+      params.push(userId);
+    }
+
+    const query_sql = `
+      SELECT COUNT(DISTINCT a."userId")::int as count
+      FROM "Attendance" a
+      JOIN "Session" s ON s.id = a."sessionId"
+      WHERE s."startTime" >= $1 AND s."startTime" < $2
+        ${userFilter}
+        ${contractFilter}
+    `;
+
+    const result = await this.prisma.$queryRawUnsafe<Array<{ count: number }>>(
+      query_sql,
+      ...params,
+    );
+
+    return result[0]?.count || 0;
   }
 }

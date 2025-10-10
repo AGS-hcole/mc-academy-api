@@ -7,7 +7,10 @@ export class PeriodDto {
   @ApiProperty({ description: 'End date of the period' })
   to: string;
 
-  @ApiProperty({ description: 'Timezone used for bucketing', example: 'Europe/Paris' })
+  @ApiProperty({
+    description: 'Timezone used for bucketing',
+    example: 'Europe/Paris',
+  })
   timezone: string;
 }
 

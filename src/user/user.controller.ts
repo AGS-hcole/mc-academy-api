@@ -12,7 +12,12 @@ import {
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { ApiBearerAuth, ApiTags, ApiQuery, ApiOperation } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiTags,
+  ApiQuery,
+  ApiOperation,
+} from '@nestjs/swagger';
 import { User } from './entities/user.entity';
 import { AuthGuard } from 'src/auth/guards/auth.guards';
 import { GetUser } from 'src/auth/decorators/get-user.decorator';
@@ -46,9 +51,23 @@ export class UserController {
   @UseGuards(AdminGuard)
   @ApiOperation({ summary: 'Lookup users with filters (Admin only)' })
   @ApiQuery({ name: 'role', required: false, description: 'Filter by role' })
-  @ApiQuery({ name: 'search', required: false, description: 'Search by name or email' })
-  @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number' })
-  @ApiQuery({ name: 'pageSize', required: false, type: Number, description: 'Page size' })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description: 'Search by name or email',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number',
+  })
+  @ApiQuery({
+    name: 'pageSize',
+    required: false,
+    type: Number,
+    description: 'Page size',
+  })
   lookup(
     @Query('role') role?: string,
     @Query('search') search?: string,
