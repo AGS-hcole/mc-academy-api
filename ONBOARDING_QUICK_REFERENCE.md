@@ -28,7 +28,8 @@ Authorization: Bearer <access_token>
 - ✅ Privacy consent accepted (`privacyConsentAt`)
 - ✅ First name set (`firstname`)
 - ✅ Last name set (`lastname`)
-- ✅ Formula selected (`formula`)
+
+**Note**: Formula is managed by administrators and not required for user onboarding.
 
 ## Request/Response Examples
 
@@ -65,10 +66,11 @@ Content-Type: application/json
   "lastname": "Cole",
   "phone": "+33611223344",
   "birthDate": "1991-05-20",
-  "formula": "FULL",
   "fftLicenseNumber": "FFT-123456"
 }
 ```
+
+**Note**: The `formula` field cannot be updated by users - it is managed by administrators.
 
 ### 3. Update Consents
 ```bash
@@ -112,6 +114,8 @@ Response:
 }
 ```
 
+**Note**: This endpoint is primarily for admin use. Users cannot set their formula through the onboarding process.
+
 ## Error Codes
 
 | Code | HTTP Status | Description |
@@ -128,8 +132,9 @@ Response:
 - `phone`: Pattern `/^\+?[0-9\s\.\-]{7,15}$/`
 - `birthDate`: ISO date, past date, >= 1900-01-01
 - `fftLicenseNumber`: 3-64 characters, unique
-- `formula`: MORNING | AFTERNOON | FULL
 - `notifyEmail`, `notifySMS`, `notifyWhatsApp`: boolean
+
+**Note**: `formula` field is not editable by users - managed by administrators only.
 
 ### UpdateConsentsDto
 - `privacyConsent`: boolean (required)
@@ -143,9 +148,10 @@ Response:
 ## Typical Onboarding Flow
 
 1. **Check Status**: `GET /api/auth/me`
-2. **Get Options**: `GET /api/metadata/formulas`
-3. **Update Profile**: `PUT /api/users/me`
-4. **Accept Consents**: `PUT /api/users/me/consents`
+2. **Update Profile**: `PUT /api/users/me`
+3. **Accept Consents**: `PUT /api/users/me/consents`
+4. **Upload Avatar** (optional): `POST /api/users/me/avatar`
+5. **Verify Complete**: `GET /api/auth/me` (mustOnboard should be false)
 5. **Upload Avatar** (optional): `POST /api/users/me/avatar`
 6. **Verify Complete**: `GET /api/auth/me` (mustOnboard should be false)
 
@@ -164,8 +170,7 @@ curl -X PUT http://localhost:3000/api/users/me \
   -H "Content-Type: application/json" \
   -d '{
     "firstname": "Hubert",
-    "lastname": "Cole",
-    "formula": "FULL"
+    "lastname": "Cole"
   }'
 ```
 

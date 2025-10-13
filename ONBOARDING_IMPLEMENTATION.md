@@ -80,7 +80,8 @@ Returns `true` if ANY of the following conditions are met:
 - `privacyConsentAt` is `null`
 - `firstname` is blank/empty
 - `lastname` is blank/empty
-- `formula` is `null`
+
+**Note**: The `formula` field is set by administrators only and is not part of the onboarding requirements.
 
 **Swagger Tags**: Auth
 
@@ -100,12 +101,13 @@ Returns `true` if ANY of the following conditions are met:
   phone?: string;            // Format: /^\+?[0-9\s\.\-]{7,15}$/
   birthDate?: string;        // ISO date, must be in past and >= 1900-01-01
   fftLicenseNumber?: string; // 3-64 chars, unique
-  formula?: 'MORNING' | 'AFTERNOON' | 'FULL';
   notifyEmail?: boolean;
   notifySMS?: boolean;
   notifyWhatsApp?: boolean;
 }
 ```
+
+**Note**: The `formula` field is managed by administrators and cannot be updated through this endpoint.
 
 **Response**: Updated user object (same as /auth/me.user)
 
@@ -491,12 +493,7 @@ const { user, mustOnboard } = await GET('/api/auth/me', {
 });
 
 if (mustOnboard) {
-  // 3. Get available formulas
-  const { items } = await GET('/api/metadata/formulas', {
-    headers: { Authorization: `Bearer ${accessToken}` }
-  });
-
-  // 4. Update profile
+  // 3. Update profile
   await PUT('/api/users/me', {
     headers: { Authorization: `Bearer ${accessToken}` },
     body: {
@@ -504,12 +501,11 @@ if (mustOnboard) {
       lastname: 'Cole',
       phone: '+33611223344',
       birthDate: '1991-05-20',
-      formula: 'FULL',
       fftLicenseNumber: 'FFT-123456'
     }
   });
 
-  // 5. Accept consents
+  // 4. Accept consents
   await PUT('/api/users/me/consents', {
     headers: { Authorization: `Bearer ${accessToken}` },
     body: {
@@ -519,7 +515,7 @@ if (mustOnboard) {
     }
   });
 
-  // 6. Upload avatar (optional)
+  // 5. Upload avatar (optional)
   const formData = new FormData();
   formData.append('file', avatarFile);
   await POST('/api/users/me/avatar', {
@@ -527,7 +523,7 @@ if (mustOnboard) {
     body: formData
   });
 
-  // 7. Verify onboarding complete
+  // 6. Verify onboarding complete
   const { mustOnboard: stillOnboarding } = await GET('/api/auth/me', {
     headers: { Authorization: `Bearer ${accessToken}` }
   });
@@ -588,7 +584,7 @@ if (mustOnboard) {
 - **Solution**: Ensure ALL required fields are set:
   - privacyConsentAt must be set (via consents endpoint)
   - firstname and lastname must be non-empty
-  - formula must be set to MORNING, AFTERNOON, or FULL
+  - Note: formula is managed by administrators and not required for onboarding
 
 ## Support
 

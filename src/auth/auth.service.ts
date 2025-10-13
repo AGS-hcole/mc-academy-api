@@ -55,10 +55,7 @@ export class AuthService {
 
       // Compute mustOnboard flag
       const mustOnboard =
-        !user.privacyConsentAt ||
-        !user.firstname ||
-        !user.lastname ||
-        !user.formula;
+        !user.privacyConsentAt || !user.firstname || !user.lastname;
 
       return {
         user,

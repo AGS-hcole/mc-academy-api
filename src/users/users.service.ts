@@ -22,7 +22,6 @@ export class UsersService {
       if (dto.phone !== undefined) data.phone = dto.phone;
       if (dto.fftLicenseNumber !== undefined)
         data.fftLicenseNumber = dto.fftLicenseNumber;
-      if (dto.formula !== undefined) data.formula = dto.formula;
       if (dto.notifyEmail !== undefined) data.notifyEmail = dto.notifyEmail;
       if (dto.notifySMS !== undefined) data.notifySMS = dto.notifySMS;
       if (dto.notifyWhatsApp !== undefined)
