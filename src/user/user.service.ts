@@ -123,6 +123,59 @@ export class UserService {
     }
   }
 
+  async lookup(params?: {
+    role?: string;
+    search?: string;
+    page?: number;
+    pageSize?: number;
+  }) {
+    const { role, search, page = 1, pageSize = 20 } = params || {};
+
+    try {
+      const where: any = {};
+
+      // Filter by role if provided
+      if (role) {
+        where.role = role;
+      }
+
+      // Search by name or email
+      if (search && search.trim()) {
+        where.OR = [
+          { firstname: { contains: search, mode: 'insensitive' } },
+          { lastname: { contains: search, mode: 'insensitive' } },
+          { email: { contains: search, mode: 'insensitive' } },
+        ];
+      }
+
+      const [users, total] = await Promise.all([
+        this.prisma.user.findMany({
+          where,
+          select: {
+            id: true,
+            firstname: true,
+            lastname: true,
+            email: true,
+            role: true,
+          },
+          skip: (page - 1) * pageSize,
+          take: pageSize,
+          orderBy: [{ lastname: 'asc' }, { firstname: 'asc' }],
+        }),
+        this.prisma.user.count({ where }),
+      ]);
+
+      return {
+        items: users,
+        total,
+        page,
+        pageSize,
+      };
+    } catch (error) {
+      throw new InternalServerErrorException(error.message);
+    }
+  }
+
   async getById(id: string) {
     try {
       const user = await this.prisma.user.findUniqueOrThrow({

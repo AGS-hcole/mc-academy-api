@@ -51,6 +51,31 @@ To get started with the application, follow these steps:
 3. Create a `.env` file in the root directory and define the environment variables as described above.
 4. Run the application using `npm run start`.
 
+## Documentation
+
+- **[Frontend Developer Guide](./FRONTEND_DEVELOPER_GUIDE.md)** - API documentation for frontend developers
+- **[Reporting Endpoints Guide](./REPORTING_ENDPOINTS_GUIDE.md)** - Guide for session analytics and reporting endpoints
+- **[Reporting Implementation](./REPORTING_IMPLEMENTATION.md)** - Technical implementation details for maintainers
+- **[Sessions Implementation](./SESSIONS_IMPLEMENTATION.md)** - Session management implementation details
+- **[Sites Frontend Guide](./SITES_FRONTEND_GUIDE.md)** - Sites API documentation
+
+## API Features
+
+### Session Management
+- Create, read, update, delete sessions
+- RSVP to sessions
+- Admin registration
+- Upcoming sessions list
+- Session filtering by date, site, slot
+
+### Reporting & Analytics (Admin Only)
+- **Summary Statistics**: Get aggregate session data over date ranges
+- **Time Series**: Daily bucketed session data for visualizations
+- **Paginated Lists**: Browse sessions with filtering and sorting
+- **User Lookup**: Find users by role or search query
+
+See [REPORTING_ENDPOINTS_GUIDE.md](./REPORTING_ENDPOINTS_GUIDE.md) for detailed API documentation.
+
 ## Developper
 
 This project has been developed by DEVOLUT, contact at [hubert.cole@devolut.fr](mailto:hubert.cole@devolut.fr).

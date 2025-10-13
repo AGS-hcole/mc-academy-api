@@ -129,6 +129,7 @@ model Session {
   @@unique([siteId, date, slot])
   @@index([date, slot])
   @@index([siteId, date])
+  @@index([startTime])
 }
 
 model Attendance {
@@ -154,6 +155,7 @@ model Attendance {
   @@unique([sessionId, userId])   // 1 answer per user per session
   @@index([userId, sessionId])
   @@index([outOfContract])
+  @@index([sessionId])
 }
 
 // ---------- Calendaring helpers ----------
