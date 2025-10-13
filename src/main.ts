@@ -4,7 +4,7 @@ import { Logger, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { swaggerOptions, swaggerTitle, swaggerDescription } from './common';
 import { IpRestrictionMiddleware } from './common/middleware/ip-restriction.middleware';
-('./common');
+import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter';
 import { main as seedDatabase } from '../prisma/seed/seed';
 
 export async function bootstrap() {
@@ -33,8 +33,11 @@ export async function bootstrap() {
     new ValidationPipe({
       whitelist: true,
       forbidNonWhitelisted: true,
+      transform: true,
     }),
   );
+
+  app.useGlobalFilters(new PrismaExceptionFilter());
 
   // Start Swagger Configurations --------------------------------
   const config = new DocumentBuilder()

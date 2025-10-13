@@ -3,12 +3,11 @@ import {
   ValidationOptions,
   ValidatorConstraint,
   ValidatorConstraintInterface,
-  ValidationArguments,
 } from 'class-validator';
 
 @ValidatorConstraint({ async: false })
 export class IsPastDateConstraint implements ValidatorConstraintInterface {
-  validate(value: any, args: ValidationArguments) {
+  validate(value: any) {
     if (!value) return true; // Allow optional fields
 
     // Parse the date
@@ -24,13 +23,13 @@ export class IsPastDateConstraint implements ValidatorConstraintInterface {
     return date <= now && date >= minDate;
   }
 
-  defaultMessage(args: ValidationArguments) {
+  defaultMessage() {
     return 'Date must be in the past and after 1900-01-01';
   }
 }
 
 export function IsPastDate(validationOptions?: ValidationOptions) {
-  return function (object: Object, propertyName: string) {
+  return function (object: object, propertyName: string) {
     registerDecorator({
       target: object.constructor,
       propertyName: propertyName,

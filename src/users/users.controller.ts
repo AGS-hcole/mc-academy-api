@@ -56,9 +56,7 @@ export class UsersController {
     FileInterceptor('file', {
       limits: { fileSize: 2 * 1024 * 1024 }, // 2MB
       fileFilter: (req, file, cb) => {
-        if (
-          !['image/png', 'image/jpeg', 'image/jpg'].includes(file.mimetype)
-        ) {
+        if (!['image/png', 'image/jpeg', 'image/jpg'].includes(file.mimetype)) {
           return cb(
             new Error('Invalid file type. Only PNG and JPEG are allowed.'),
             false,
@@ -103,9 +101,7 @@ export class UsersController {
     FileInterceptor('file', {
       limits: { fileSize: 4 * 1024 * 1024 }, // 4MB
       fileFilter: (req, file, cb) => {
-        if (
-          !['image/png', 'image/jpeg', 'image/jpg'].includes(file.mimetype)
-        ) {
+        if (!['image/png', 'image/jpeg', 'image/jpg'].includes(file.mimetype)) {
           return cb(
             new Error('Invalid file type. Only PNG and JPEG are allowed.'),
             false,

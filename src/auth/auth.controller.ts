@@ -1,6 +1,18 @@
-import { Controller, Post, Body, UnauthorizedException, Get, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  UnauthorizedException,
+  Get,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { SignInUserDto } from './dto/requests/login-user.dto';
 import { ForgotPasswordDto } from './dto/requests/forgot-password.dto';
 import { ResetPasswordDto } from './dto/requests/reset-password.dto';
