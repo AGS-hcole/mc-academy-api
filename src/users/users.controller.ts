@@ -183,10 +183,16 @@ export class UsersController {
       throw new NotFoundException('Background not found');
     }
 
+    const buffer = Buffer.isBuffer(background.data)
+      ? background.data
+      : Buffer.from(background.data as any, 'base64');
+
     res.set({
       'Content-Type': background.mimeType || 'image/png',
       'Cache-Control': 'private, max-age=0',
+      'Content-Length': buffer.length.toString(),
     });
-    res.send(background.data);
+
+    res.end(buffer);
   }
 }
