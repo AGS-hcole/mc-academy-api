@@ -71,7 +71,7 @@ describe('Onboarding Endpoints (e2e)', () => {
       expect(response.body).toHaveProperty('user');
       expect(response.body).toHaveProperty('mustOnboard');
       expect(response.body.user.email).toBe('test-onboarding@example.com');
-      expect(response.body.mustOnboard).toBe(true); // No privacy consent or formula set
+      expect(response.body.mustOnboard).toBe(true); // No privacy consent yet
     });
 
     it('should return 401 without authentication', async () => {
@@ -86,7 +86,6 @@ describe('Onboarding Endpoints (e2e)', () => {
         lastname: 'Cole',
         phone: '+33611223344',
         birthDate: '1991-05-20',
-        formula: 'FULL',
         notifyEmail: true,
         notifySMS: false,
         notifyWhatsApp: false,
@@ -100,7 +99,6 @@ describe('Onboarding Endpoints (e2e)', () => {
 
       expect(response.body.firstname).toBe('Hubert');
       expect(response.body.lastname).toBe('Cole');
-      expect(response.body.formula).toBe('FULL');
     });
 
     it('should return 409 for duplicate FFT license number', async () => {
@@ -296,7 +294,6 @@ describe('Onboarding Endpoints (e2e)', () => {
         .send({
           firstname: 'Complete',
           lastname: 'User',
-          formula: 'FULL',
         });
 
       // 2. Accept consents

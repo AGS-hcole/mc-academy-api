@@ -1,9 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { FormulaType } from '@prisma/client';
 import {
   IsString,
   IsOptional,
-  IsEnum,
   IsBoolean,
   Length,
   Matches,
@@ -70,15 +68,6 @@ export class UpdateMeDto {
   @IsString()
   @Length(3, 64)
   fftLicenseNumber?: string;
-
-  @ApiPropertyOptional({
-    description: 'Formula type',
-    enum: FormulaType,
-    example: 'FULL',
-  })
-  @IsOptional()
-  @IsEnum(FormulaType)
-  formula?: FormulaType;
 
   @ApiPropertyOptional({
     description: 'Email notifications enabled',
