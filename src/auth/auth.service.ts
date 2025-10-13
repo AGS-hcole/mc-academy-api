@@ -26,6 +26,50 @@ export class AuthService {
   // -----------------------------------------------------------------------------------------------------
 
   /**
+   * Get current user with mustOnboard flag
+   */
+  async getMe(userId: string) {
+    try {
+      const user = await this.prisma.user.findUniqueOrThrow({
+        where: { id: userId },
+        select: {
+          id: true,
+          email: true,
+          role: true,
+          firstname: true,
+          lastname: true,
+          phone: true,
+          birthDate: true,
+          fftLicenseNumber: true,
+          formula: true,
+          notifyEmail: true,
+          notifySMS: true,
+          notifyWhatsApp: true,
+          privacyConsentAt: true,
+          photoConsentAt: true,
+          marketingConsentAt: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+
+      // Compute mustOnboard flag
+      const mustOnboard =
+        !user.privacyConsentAt ||
+        !user.firstname ||
+        !user.lastname ||
+        !user.formula;
+
+      return {
+        user,
+        mustOnboard,
+      };
+    } catch (error) {
+      throw new UnauthorizedException('Invalid user');
+    }
+  }
+
+  /**
    * Authenticates a user by their email and password.
    *
    * @param email - The email of the user attempting to sign in.

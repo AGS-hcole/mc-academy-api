@@ -1,12 +1,14 @@
-import { Controller, Post, Body, UnauthorizedException } from '@nestjs/common';
+import { Controller, Post, Body, UnauthorizedException, Get, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { SignInUserDto } from './dto/requests/login-user.dto';
 import { ForgotPasswordDto } from './dto/requests/forgot-password.dto';
 import { ResetPasswordDto } from './dto/requests/reset-password.dto';
 import { RefreshTokenDto } from './dto/requests/refresh-token.dto';
+import { AuthGuard } from './guards/auth.guards';
+import { GetUser } from './decorators/get-user.decorator';
 
-@ApiTags('Authentication')
+@ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   /**
@@ -47,6 +49,16 @@ export class AuthController {
   // -----------------------------------------------------------------------------------------------------
   // @ Auth Endpoints
   // -----------------------------------------------------------------------------------------------------
+  @Get('me')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get current user with onboarding status' })
+  @ApiResponse({ status: 200, description: 'User retrieved successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async getMe(@GetUser() user: any) {
+    return this.authService.getMe(user.id);
+  }
+
   @Post('refresh-token')
   async refreshToken(@Body() refreshTokenDto: RefreshTokenDto) {
     return await this.authService.refreshToken(refreshTokenDto.refreshToken);

@@ -12,6 +12,8 @@ import { RolesModule } from './roles/roles.module';
 import { SessionsModule } from './sessions/sessions.module';
 import { SitesModule } from './sites/sites.module';
 import { ReportsModule } from './reports/reports.module';
+import { UsersModule } from './users/users.module';
+import { MetadataModule } from './metadata/metadata.module';
 
 @Module({
   imports: [
@@ -21,11 +23,13 @@ import { ReportsModule } from './reports/reports.module';
     AuthModule,
     NotificationsModule,
     UserModule,
+    UsersModule,
     DashboardModule,
     RolesModule,
     SessionsModule,
     SitesModule,
     ReportsModule,
+    MetadataModule,
   ],
   controllers: [AppController],
   providers: [AppService],
