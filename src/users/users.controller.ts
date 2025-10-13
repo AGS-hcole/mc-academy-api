@@ -155,11 +155,17 @@ export class UsersController {
       throw new NotFoundException('Avatar not found');
     }
 
+    const buffer = Buffer.isBuffer(avatar.data)
+      ? avatar.data
+      : Buffer.from(avatar.data as any, 'base64');
+
     res.set({
       'Content-Type': avatar.mimeType || 'image/png',
       'Cache-Control': 'private, max-age=0',
+      'Content-Length': buffer.length.toString(),
     });
-    res.send(avatar.data);
+
+    res.end(buffer);
   }
 
   @Get('me/background')
