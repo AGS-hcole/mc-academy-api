@@ -5,7 +5,6 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 
 describe('TournamentsService - Team Generation', () => {
   let service: TournamentsService;
-  let prisma: PrismaService;
 
   const mockPrismaService = {
     tournament: {
@@ -33,7 +32,6 @@ describe('TournamentsService - Team Generation', () => {
     }).compile();
 
     service = module.get<TournamentsService>(TournamentsService);
-    prisma = module.get<PrismaService>(PrismaService);
 
     jest.clearAllMocks();
   });
@@ -127,7 +125,7 @@ describe('TournamentsService - Team Generation', () => {
       ];
 
       // Mock transaction
-      mockPrismaService.$transaction.mockImplementation(async (callback) => {
+      mockPrismaService.$transaction.mockImplementation(async callback => {
         const mockTx = {
           tournamentTeam: {
             deleteMany: jest.fn().mockResolvedValue({}),
@@ -193,7 +191,7 @@ describe('TournamentsService - Team Generation', () => {
         { id: 'team-2', orderIndex: 1 }, // bye team with single member
       ];
 
-      mockPrismaService.$transaction.mockImplementation(async (callback) => {
+      mockPrismaService.$transaction.mockImplementation(async callback => {
         const mockTx = {
           tournamentTeam: {
             deleteMany: jest.fn().mockResolvedValue({}),
@@ -269,7 +267,7 @@ describe('TournamentsService - Team Generation', () => {
         { id: 'team-2', orderIndex: 1 },
       ];
 
-      mockPrismaService.$transaction.mockImplementation(async (callback) => {
+      mockPrismaService.$transaction.mockImplementation(async callback => {
         const mockTx = {
           tournamentTeam: {
             deleteMany: jest.fn().mockResolvedValue({}),

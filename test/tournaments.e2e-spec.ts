@@ -44,14 +44,12 @@ describe('Tournaments (e2e)', () => {
     });
 
     // Create admin user
-    const adminSignup = await request(app.getHttpServer())
-      .post('/auth/signup')
-      .send({
-        email: 'admin-tournament@test.com',
-        password: 'Password123!',
-        firstname: 'Admin',
-        lastname: 'User',
-      });
+    await request(app.getHttpServer()).post('/auth/signup').send({
+      email: 'admin-tournament@test.com',
+      password: 'Password123!',
+      firstname: 'Admin',
+      lastname: 'User',
+    });
 
     // Manually set admin role
     adminUser = await prisma.user.update({
@@ -268,7 +266,9 @@ describe('Tournaments (e2e)', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.feedback).toBe('Great tournament, really enjoyed it!');
+      expect(response.body.feedback).toBe(
+        'Great tournament, really enjoyed it!',
+      );
     });
 
     it('should not allow feedback without authentication', async () => {
