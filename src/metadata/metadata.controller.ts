@@ -6,7 +6,7 @@ import {
   ApiResponse,
 } from '@nestjs/swagger';
 import { AuthGuard } from '../auth/guards/auth.guards';
-import { FormulaType } from '@prisma/client';
+import { FormulaType, TournamentType } from '@prisma/client';
 
 @ApiTags('Metadata')
 @ApiBearerAuth()
@@ -31,6 +31,31 @@ export class MetadataController {
   getFormulas() {
     return {
       items: Object.values(FormulaType),
+    };
+  }
+
+  @Get('tournament-types')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Get list of available tournament types' })
+  @ApiResponse({
+    status: 200,
+    description: 'Tournament types retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        items: {
+          type: 'array',
+          items: {
+            type: 'string',
+            enum: ['P250', 'P500', 'P1000', 'P1500', 'P2000'],
+          },
+        },
+      },
+    },
+  })
+  getTournamentTypes() {
+    return {
+      items: Object.values(TournamentType),
     };
   }
 }
