@@ -2,7 +2,7 @@
 
 ## Base URL
 ```
-/api/v1/tournaments
+/api/tournaments
 /api/v1/my/tournaments
 ```
 
@@ -16,7 +16,7 @@ Admin endpoints require `admin` role.
 
 ### Create Tournament
 ```http
-POST /v1/tournaments
+POST /tournaments
 Authorization: Bearer {admin_token}
 
 {
@@ -33,19 +33,19 @@ Authorization: Bearer {admin_token}
 
 ### List Tournaments
 ```http
-GET /v1/tournaments?status=PUBLISHED&type=P1000&q=Paris
+GET /tournaments?status=PUBLISHED&type=P1000&q=Paris
 Authorization: Bearer {admin_token}
 ```
 
 ### Get Tournament Details
 ```http
-GET /v1/tournaments/{id}
+GET /tournaments/{id}
 Authorization: Bearer {admin_token}
 ```
 
 ### Update Tournament
 ```http
-PUT /v1/tournaments/{id}
+PUT /tournaments/{id}
 Authorization: Bearer {admin_token}
 
 {
@@ -56,19 +56,19 @@ Authorization: Bearer {admin_token}
 
 ### Delete Tournament (DRAFT only)
 ```http
-DELETE /v1/tournaments/{id}
+DELETE /tournaments/{id}
 Authorization: Bearer {admin_token}
 ```
 
 ### Publish Tournament
 ```http
-PUT /v1/tournaments/{id}/publish
+PUT /tournaments/{id}/publish
 Authorization: Bearer {admin_token}
 ```
 
 ### Archive Tournament
 ```http
-PUT /v1/tournaments/{id}/archive
+PUT /tournaments/{id}/archive
 Authorization: Bearer {admin_token}
 ```
 
@@ -78,7 +78,7 @@ Authorization: Bearer {admin_token}
 
 ### Replace Participants
 ```http
-PUT /v1/tournaments/{id}/participants
+PUT /tournaments/{id}/participants
 Authorization: Bearer {admin_token}
 
 {
@@ -94,7 +94,7 @@ Authorization: Bearer {admin_token}
 
 ### Generate Teams
 ```http
-POST /v1/tournaments/{id}/generate-teams
+POST /tournaments/{id}/generate-teams
 Authorization: Bearer {admin_token}
 ```
 
@@ -102,7 +102,7 @@ Algorithm: Sorts by ranking (desc) → pairs adjacent (1-2, 3-4, ...)
 
 ### Reorder Teams
 ```http
-PUT /v1/tournaments/{id}/reorder-teams
+PUT /tournaments/{id}/reorder-teams
 Authorization: Bearer {admin_token}
 
 {
@@ -112,7 +112,7 @@ Authorization: Bearer {admin_token}
 
 ### Update Team Placement
 ```http
-PUT /v1/tournaments/{id}/teams/{teamId}/placement
+PUT /tournaments/{id}/teams/{teamId}/placement
 Authorization: Bearer {admin_token}
 
 {
@@ -134,7 +134,7 @@ Authorization: Bearer {token}
 
 ### RSVP
 ```http
-PUT /v1/tournaments/{id}/rsvp
+PUT /tournaments/{id}/rsvp
 Authorization: Bearer {token}
 
 {
@@ -146,7 +146,7 @@ Authorization: Bearer {token}
 
 ### Submit Feedback
 ```http
-PUT /v1/tournaments/{id}/feedback
+PUT /tournaments/{id}/feedback
 Authorization: Bearer {token}
 
 {
@@ -182,22 +182,22 @@ Authorization: Bearer {token}
 ### Admin: Create and Publish Tournament
 ```bash
 # 1. Create
-POST /v1/tournaments → {id}
+POST /tournaments → {id}
 
 # 2. Add participants
-PUT /v1/tournaments/{id}/participants
+PUT /tournaments/{id}/participants
 {
   "userIds": ["user1", "user2", "user3", "user4"]
 }
 
 # 3. Generate teams
-POST /v1/tournaments/{id}/generate-teams
+POST /tournaments/{id}/generate-teams
 
 # 4. (Optional) Reorder teams
-PUT /v1/tournaments/{id}/reorder-teams
+PUT /tournaments/{id}/reorder-teams
 
 # 5. Publish
-PUT /v1/tournaments/{id}/publish
+PUT /tournaments/{id}/publish
 ```
 
 ### User: View and RSVP
@@ -206,13 +206,13 @@ PUT /v1/tournaments/{id}/publish
 GET /v1/my/tournaments?scope=upcoming
 
 # 2. Confirm participation
-PUT /v1/tournaments/{id}/rsvp
+PUT /tournaments/{id}/rsvp
 {
   "status": "CONFIRMED"
 }
 
 # 3. After tournament, submit feedback
-PUT /v1/tournaments/{id}/feedback
+PUT /tournaments/{id}/feedback
 {
   "feedback": "Great experience!"
 }
@@ -221,17 +221,17 @@ PUT /v1/tournaments/{id}/feedback
 ### Admin: Enter Results
 ```bash
 # 1. Get tournament details
-GET /v1/tournaments/{id}
+GET /tournaments/{id}
 
 # 2. Set placements for each team
-PUT /v1/tournaments/{id}/teams/{team1}/placement
+PUT /tournaments/{id}/teams/{team1}/placement
 { "placement": 1 }
 
-PUT /v1/tournaments/{id}/teams/{team2}/placement
+PUT /tournaments/{id}/teams/{team2}/placement
 { "placement": 2 }
 
 # 3. Archive
-PUT /v1/tournaments/{id}/archive
+PUT /tournaments/{id}/archive
 ```
 
 ---

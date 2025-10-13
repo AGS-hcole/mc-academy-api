@@ -27,9 +27,9 @@ import {
 import { AdminGuard } from '../auth/guards/admin.guard';
 import { TournamentStatus, TournamentType } from '@prisma/client';
 
-@ApiTags('v1/tournaments')
+@ApiTags('tournaments')
 @ApiBearerAuth()
-@Controller('v1/tournaments')
+@Controller('tournaments')
 @UseGuards(AdminGuard)
 export class TournamentsController {
   constructor(private readonly tournamentsService: TournamentsService) {}

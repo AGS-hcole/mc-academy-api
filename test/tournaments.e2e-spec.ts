@@ -108,7 +108,7 @@ describe('Tournaments (e2e)', () => {
   describe('Admin Endpoints', () => {
     it('should create a tournament as admin', async () => {
       const response = await request(app.getHttpServer())
-        .post('/v1/tournaments')
+        .post('/tournaments')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
           title: 'Test Tournament',
@@ -129,7 +129,7 @@ describe('Tournaments (e2e)', () => {
 
     it('should not allow regular user to create tournament', async () => {
       const response = await request(app.getHttpServer())
-        .post('/v1/tournaments')
+        .post('/tournaments')
         .set('Authorization', `Bearer ${userToken}`)
         .send({
           title: 'Unauthorized Tournament',
@@ -169,7 +169,7 @@ describe('Tournaments (e2e)', () => {
     it('should not publish tournament without teams', async () => {
       // Create new tournament without teams
       const createResponse = await request(app.getHttpServer())
-        .post('/v1/tournaments')
+        .post('/tournaments')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
           title: 'No Teams Tournament',
@@ -285,7 +285,7 @@ describe('Tournaments (e2e)', () => {
   describe('My Tournaments', () => {
     it('should list user tournaments', async () => {
       const response = await request(app.getHttpServer())
-        .get('/v1/my/tournaments')
+        .get('/my/tournaments')
         .set('Authorization', `Bearer ${userToken}`);
 
       expect(response.status).toBe(200);
@@ -295,7 +295,7 @@ describe('Tournaments (e2e)', () => {
 
     it('should filter upcoming tournaments', async () => {
       const response = await request(app.getHttpServer())
-        .get('/v1/my/tournaments?scope=upcoming')
+        .get('/my/tournaments?scope=upcoming')
         .set('Authorization', `Bearer ${userToken}`);
 
       expect(response.status).toBe(200);
@@ -304,7 +304,7 @@ describe('Tournaments (e2e)', () => {
 
     it('should not allow accessing my tournaments without authentication', async () => {
       const response = await request(app.getHttpServer()).get(
-        '/v1/my/tournaments',
+        '/my/tournaments',
       );
 
       expect(response.status).toBe(401);

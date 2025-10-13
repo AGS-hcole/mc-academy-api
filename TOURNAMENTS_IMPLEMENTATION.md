@@ -47,7 +47,7 @@ src/
 
 ### Admin Endpoints (require AdminGuard)
 
-#### 1. POST /api/v1/tournaments
+#### 1. POST /api/tournaments
 Create a new tournament (DRAFT status by default).
 
 **Request:**
@@ -71,7 +71,7 @@ Create a new tournament (DRAFT status by default).
 
 ---
 
-#### 2. GET /api/v1/tournaments
+#### 2. GET /api/tournaments
 List all tournaments with optional filters.
 
 **Query Parameters:**
@@ -85,7 +85,7 @@ List all tournaments with optional filters.
 
 ---
 
-#### 3. GET /api/v1/tournaments/:id
+#### 3. GET /api/tournaments/:id
 Get detailed tournament information including participants and teams.
 
 **Response:**
@@ -119,21 +119,21 @@ Get detailed tournament information including participants and teams.
 
 ---
 
-#### 4. PUT /api/v1/tournaments/:id
+#### 4. PUT /api/tournaments/:id
 Update tournament details (does not affect participants or teams).
 
 **Request:** Partial tournament data (same as create)
 
 ---
 
-#### 5. DELETE /api/v1/tournaments/:id
+#### 5. DELETE /api/tournaments/:id
 Delete a tournament. **Only allowed for DRAFT tournaments.**
 
 **Response:** 400 Bad Request if tournament is not in DRAFT status
 
 ---
 
-#### 6. PUT /api/v1/tournaments/:id/publish
+#### 6. PUT /api/tournaments/:id/publish
 Publish a tournament (set status to PUBLISHED).
 
 **Requirements:**
@@ -144,12 +144,12 @@ Publish a tournament (set status to PUBLISHED).
 
 ---
 
-#### 7. PUT /api/v1/tournaments/:id/archive
+#### 7. PUT /api/tournaments/:id/archive
 Archive a tournament (set status to ARCHIVED).
 
 ---
 
-#### 8. PUT /api/v1/tournaments/:id/participants
+#### 8. PUT /api/tournaments/:id/participants
 Replace participant list with array of user IDs.
 
 **Request:**
@@ -167,7 +167,7 @@ Replace participant list with array of user IDs.
 
 ---
 
-#### 9. POST /api/v1/tournaments/:id/generate-teams
+#### 9. POST /api/tournaments/:id/generate-teams
 Auto-generate homogeneous teams based on current ranking.
 
 **Algorithm:**
@@ -182,7 +182,7 @@ Auto-generate homogeneous teams based on current ranking.
 
 ---
 
-#### 10. PUT /api/v1/tournaments/:id/reorder-teams
+#### 10. PUT /api/tournaments/:id/reorder-teams
 Manually reorder teams (for drag & drop UI).
 
 **Request:**
@@ -198,7 +198,7 @@ Manually reorder teams (for drag & drop UI).
 
 ---
 
-#### 11. PUT /api/v1/tournaments/:id/teams/:teamId/placement
+#### 11. PUT /api/tournaments/:id/teams/:teamId/placement
 Set final placement for a team.
 
 **Request:**
@@ -227,7 +227,7 @@ List user's tournaments (only PUBLISHED tournaments).
 
 ---
 
-#### 13. PUT /api/v1/tournaments/:id/rsvp
+#### 13. PUT /api/tournaments/:id/rsvp
 Confirm or decline participation.
 
 **Request:**
@@ -243,7 +243,7 @@ Confirm or decline participation.
 
 ---
 
-#### 14. PUT /api/v1/tournaments/:id/feedback
+#### 14. PUT /api/tournaments/:id/feedback
 Submit feedback about tournament participation.
 
 **Request:**
@@ -367,21 +367,21 @@ npm run test:e2e -- tournaments.e2e-spec.ts
 ## Frontend Integration Tips
 
 **Creating a Tournament:**
-1. POST /v1/tournaments (admin)
-2. PUT /v1/tournaments/:id/participants with user IDs
-3. POST /v1/tournaments/:id/generate-teams
-4. (Optional) PUT /v1/tournaments/:id/reorder-teams
-5. PUT /v1/tournaments/:id/publish
+1. POST /tournaments (admin)
+2. PUT /tournaments/:id/participants with user IDs
+3. POST /tournaments/:id/generate-teams
+4. (Optional) PUT /tournaments/:id/reorder-teams
+5. PUT /tournaments/:id/publish
 
 **User Flow:**
 1. GET /v1/my/tournaments?scope=upcoming
 2. User sees tournament and can RSVP
-3. PUT /v1/tournaments/:id/rsvp with status
-4. After tournament: PUT /v1/tournaments/:id/feedback
+3. PUT /tournaments/:id/rsvp with status
+4. After tournament: PUT /tournaments/:id/feedback
 
 **Results Entry (Admin):**
-1. GET /v1/tournaments/:id to see teams
-2. For each team: PUT /v1/tournaments/:id/teams/:teamId/placement
+1. GET /tournaments/:id to see teams
+2. For each team: PUT /tournaments/:id/teams/:teamId/placement
 
 ## Support
 

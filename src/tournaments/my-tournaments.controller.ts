@@ -19,9 +19,9 @@ import { TournamentsService } from './tournaments.service';
 import { TournamentRsvpDto, TournamentFeedbackDto } from './dto';
 import { AuthGuard } from '../auth/guards/auth.guards';
 
-@ApiTags('v1/my/tournaments')
+@ApiTags('my-tournaments')
 @ApiBearerAuth()
-@Controller('v1')
+@Controller('')
 @UseGuards(AuthGuard)
 export class MyTournamentsController {
   constructor(private readonly tournamentsService: TournamentsService) {}
