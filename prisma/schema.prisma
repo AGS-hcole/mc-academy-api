@@ -41,6 +41,26 @@ enum NotifyChannel {
   WHATSAPP
 }
 
+enum TournamentType {
+  P250
+  P500
+  P1000
+  P1500
+  P2000
+}
+
+enum TournamentStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ParticipationStatus {
+  PENDING
+  CONFIRMED
+  DECLINED
+}
+
 // ---------- Core ----------
 model User {
   id                 String    @id @default(uuid())
@@ -56,6 +76,7 @@ model User {
 
   // Contract / formula
   formula            FormulaType?
+  currentRanking     Int?      // used for tournament pairing
 
   // Security
   password           String
@@ -80,6 +101,7 @@ model User {
   notifyWhatsApp     Boolean   @default(false)
 
   attendances        Attendance[]
+  tournamentParticipants TournamentParticipant[]
 
   createdAt          DateTime  @default(now())
   updatedAt          DateTime? @updatedAt
@@ -202,4 +224,72 @@ model AppSetting {
 
   createdAt                   DateTime  @default(now())
   updatedAt                   DateTime? @updatedAt
+}
+
+// ---------- Tournaments ----------
+model Tournament {
+  id           String            @id @default(uuid())
+  title        String
+  type         TournamentType
+  status       TournamentStatus  @default(DRAFT)
+  addressLine1 String
+  addressLine2 String?
+  postalCode   String
+  city         String
+  country      String
+  latitude     Float?            // optional for future map
+  longitude    Float?            // optional for future map
+  startsAt     DateTime
+  endsAt       DateTime
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  
+  participants TournamentParticipant[]
+  teams        TournamentTeam[]
+
+  @@index([status])
+  @@index([startsAt])
+  @@index([endsAt])
+}
+
+model TournamentParticipant {
+  id            String               @id @default(uuid())
+  tournamentId  String
+  userId        String
+  status        ParticipationStatus  @default(PENDING) // RSVP
+  feedback      String?
+  
+  tournament    Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  teamMemberships TournamentTeamMember[]
+  
+  @@unique([tournamentId, userId])
+  @@index([userId])
+  @@index([tournamentId])
+}
+
+model TournamentTeam {
+  id            String    @id @default(uuid())
+  tournamentId  String
+  orderIndex    Int       // for manual reordering (drag & drop)
+  placement     Int?      // 1st, 2nd, 3rd... set at the end (team result)
+  
+  tournament    Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  members       TournamentTeamMember[]
+  
+  @@unique([tournamentId, orderIndex])
+  @@index([tournamentId])
+}
+
+model TournamentTeamMember {
+  id               String          @id @default(uuid())
+  teamId           String
+  participantId    String
+  
+  team             TournamentTeam  @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  participant      TournamentParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  
+  @@unique([teamId, participantId])
+  @@index([teamId])
+  @@index([participantId])
 }
