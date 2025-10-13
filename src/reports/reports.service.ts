@@ -289,7 +289,7 @@ export class ReportsService {
     userId?: string,
   ): Prisma.SessionWhereInput {
     const where: Prisma.SessionWhereInput = {
-      startTime: { gte: fromDate, lt: toDate },
+      date: { gte: fromDate, lt: toDate },
     };
 
     // Add user filter
