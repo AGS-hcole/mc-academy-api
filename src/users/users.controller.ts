@@ -53,7 +53,7 @@ export class UsersController {
   @Post('me/avatar')
   @UseGuards(AuthGuard)
   @UseInterceptors(
-    FileInterceptor('file', {
+    FileInterceptor('avatar', {
       limits: { fileSize: 2 * 1024 * 1024 }, // 2MB
       fileFilter: (req, file, cb) => {
         if (!['image/png', 'image/jpeg', 'image/jpg'].includes(file.mimetype)) {
@@ -72,7 +72,7 @@ export class UsersController {
     schema: {
       type: 'object',
       properties: {
-        file: {
+        avatar: {
           type: 'string',
           format: 'binary',
         },
@@ -98,7 +98,7 @@ export class UsersController {
   @Post('me/background')
   @UseGuards(AuthGuard)
   @UseInterceptors(
-    FileInterceptor('file', {
+    FileInterceptor('background', {
       limits: { fileSize: 4 * 1024 * 1024 }, // 4MB
       fileFilter: (req, file, cb) => {
         if (!['image/png', 'image/jpeg', 'image/jpg'].includes(file.mimetype)) {
@@ -117,7 +117,7 @@ export class UsersController {
     schema: {
       type: 'object',
       properties: {
-        file: {
+        background: {
           type: 'string',
           format: 'binary',
         },
