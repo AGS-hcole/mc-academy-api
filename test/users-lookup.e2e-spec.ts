@@ -13,7 +13,7 @@ describe('Users Lookup Endpoint (e2e)', () => {
   let userAccessToken: string;
   let testAdminId: string;
   let testUserId: string;
-  let testUserIds: string[] = [];
+  const testUserIds: string[] = [];
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -91,7 +91,7 @@ describe('Users Lookup Endpoint (e2e)', () => {
         },
       }),
     ]);
-    testUserIds.push(...additionalUsers.map((u) => u.id));
+    testUserIds.push(...additionalUsers.map(u => u.id));
 
     // Sign in as admin to get access token
     const adminSignInResponse = await request(app.getHttpServer())
