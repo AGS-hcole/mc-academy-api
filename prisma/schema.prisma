@@ -102,6 +102,8 @@ model User {
 
   attendances        Attendance[]
   tournamentParticipants TournamentParticipant[]
+  ratingsGiven       SessionRating[] @relation("RaterUser")
+  ratingsReceived    SessionRating[] @relation("RatedUser")
 
   createdAt          DateTime  @default(now())
   updatedAt          DateTime? @updatedAt
@@ -143,6 +145,7 @@ model Session {
 
   site        Site         @relation(fields: [siteId], references: [id], onDelete: Cascade)
   attendances Attendance[]
+  ratings     SessionRating[]
 
   createdAt   DateTime     @default(now())
   updatedAt   DateTime?    @updatedAt
@@ -178,6 +181,25 @@ model Attendance {
   @@index([userId, sessionId])
   @@index([outOfContract])
   @@index([sessionId])
+}
+
+model SessionRating {
+  id        String   @id @default(uuid())
+  sessionId String
+  userId    String   // participant being rated
+  raterId   String   // admin who rated
+  score     Int      // 0..10
+  comment   String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user    User    @relation("RatedUser", fields: [userId], references: [id], onDelete: Cascade)
+  rater   User    @relation("RaterUser", fields: [raterId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, userId]) // one rating per participant per session
+  @@index([sessionId])
+  @@index([userId])
 }
 
 // ---------- Calendaring helpers ----------
