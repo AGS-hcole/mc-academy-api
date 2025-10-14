@@ -10,6 +10,9 @@ import {
   SessionsSummaryDto,
   SessionsTimeseriesDto,
   SessionsListDto,
+  RatingsQueryDto,
+  RatingsSummaryDto,
+  RatingDistribution,
 } from './dto';
 
 @Injectable()
@@ -345,5 +348,274 @@ export class ReportsService {
     }
 
     return result;
+  }
+
+  /**
+   * Get ratings summary report
+   */
+  async getRatingsSummary(query: RatingsQueryDto): Promise<RatingsSummaryDto> {
+    const { from, to, userId, contractScope = 'all' } = query;
+
+    // Validate date range
+    const fromDate = new Date(from);
+    const toDate = new Date(to);
+
+    if (fromDate >= toDate) {
+      throw new BadRequestException('from date must be before to date');
+    }
+
+    // Validate user exists if provided
+    if (userId) {
+      const userExists = await this.prisma.user.findUnique({
+        where: { id: userId },
+      });
+      if (!userExists) {
+        throw new BadRequestException('User not found');
+      }
+    }
+
+    // Build where clause for ratings
+    // Only consider ratings where attendance status is YES
+    const ratingsWhere: any = {
+      session: {
+        date: { gte: fromDate, lt: toDate },
+      },
+      // Join with attendance to ensure status YES
+    };
+
+    // Add user filter if provided
+    if (userId) {
+      ratingsWhere.userId = userId;
+    }
+
+    // Get all ratings with session and attendance data
+    const ratings = await this.prisma.sessionRating.findMany({
+      where: ratingsWhere,
+      include: {
+        session: {
+          include: {
+            attendances: {
+              select: {
+                userId: true,
+                status: true,
+                outOfContract: true,
+              },
+            },
+          },
+        },
+        user: {
+          select: {
+            id: true,
+            firstname: true,
+            lastname: true,
+          },
+        },
+      },
+    });
+
+    // Filter ratings to only those where the user has attendance status YES
+    const validRatings = ratings.filter(rating => {
+      const attendance = rating.session.attendances.find(
+        att => att.userId === rating.userId,
+      );
+      return attendance && attendance.status === 'YES';
+    });
+
+    // Apply contract scope filter
+    let filteredRatings = validRatings;
+    if (contractScope !== 'all') {
+      filteredRatings = validRatings.filter(rating => {
+        const attendance = rating.session.attendances.find(
+          att => att.userId === rating.userId,
+        );
+        if (contractScope === 'contract') {
+          return attendance && !attendance.outOfContract;
+        } else if (contractScope === 'noContract') {
+          return attendance && attendance.outOfContract;
+        }
+        return true;
+      });
+    }
+
+    // Calculate global aggregates
+    const count = filteredRatings.length;
+    const average =
+      count > 0
+        ? filteredRatings.reduce((sum, r) => sum + r.score, 0) / count
+        : null;
+
+    // Calculate distribution (1-10 scale)
+    const distribution: RatingDistribution = {
+      '1': 0,
+      '2': 0,
+      '3': 0,
+      '4': 0,
+      '5': 0,
+      '6': 0,
+      '7': 0,
+      '8': 0,
+      '9': 0,
+      '10': 0,
+    };
+
+    for (const rating of filteredRatings) {
+      const score = rating.score.toString() as keyof RatingDistribution;
+      if (score in distribution) {
+        distribution[score]++;
+      }
+    }
+
+    // Calculate ratedSessions and unratedSessions
+    const ratedSessionIds = new Set(filteredRatings.map(r => r.sessionId));
+    const ratedSessions = ratedSessionIds.size;
+
+    // Get total sessions in range with attendances status YES
+    const sessionsWhere: Prisma.SessionWhereInput = {
+      date: { gte: fromDate, lt: toDate },
+      attendances: {
+        some: {
+          status: 'YES',
+          ...(userId ? { userId } : {}),
+        },
+      },
+    };
+
+    const allSessions = await this.prisma.session.findMany({
+      where: sessionsWhere,
+      select: {
+        id: true,
+        attendances: {
+          select: {
+            outOfContract: true,
+            userId: true,
+            status: true,
+          },
+        },
+      },
+    });
+
+    // Apply contract scope filter to total sessions count
+    let filteredSessions = allSessions;
+    if (contractScope !== 'all') {
+      filteredSessions = allSessions.filter(session => {
+        const relevantAttendances = userId
+          ? session.attendances.filter(
+              att => att.userId === userId && att.status === 'YES',
+            )
+          : session.attendances.filter(att => att.status === 'YES');
+
+        if (contractScope === 'contract') {
+          return relevantAttendances.some(att => !att.outOfContract);
+        } else if (contractScope === 'noContract') {
+          return relevantAttendances.some(att => att.outOfContract);
+        }
+        return true;
+      });
+    }
+
+    const totalSessions = filteredSessions.length;
+    const unratedSessions = Math.max(0, totalSessions - ratedSessions);
+
+    // Calculate contract split
+    let contractCount = 0;
+    let nonContractCount = 0;
+
+    for (const rating of filteredRatings) {
+      const attendance = rating.session.attendances.find(
+        att => att.userId === rating.userId,
+      );
+      if (attendance) {
+        if (attendance.outOfContract) {
+          nonContractCount++;
+        } else {
+          contractCount++;
+        }
+      }
+    }
+
+    // Build response
+    const response: RatingsSummaryDto = {
+      period: { from, to },
+      scope: { userId, contractScope },
+      global: {
+        average,
+        count,
+        distribution,
+        ratedSessions,
+        unratedSessions,
+      },
+      contractSplit: {
+        contractCount,
+        nonContractCount,
+      },
+    };
+
+    // Calculate per-user aggregates if userId not specified
+    if (!userId) {
+      // Group ratings by user
+      const userRatingsMap = new Map<
+        string,
+        { ratings: typeof filteredRatings; user: any }
+      >();
+
+      for (const rating of filteredRatings) {
+        if (!userRatingsMap.has(rating.userId)) {
+          userRatingsMap.set(rating.userId, {
+            ratings: [],
+            user: rating.user,
+          });
+        }
+        userRatingsMap.get(rating.userId)!.ratings.push(rating);
+      }
+
+      // Calculate per-user stats
+      const perUser = Array.from(userRatingsMap.entries())
+        .map(([userId, data]) => {
+          const userCount = data.ratings.length;
+          const userAverage =
+            data.ratings.reduce((sum, r) => sum + r.score, 0) / userCount;
+
+          return {
+            user: {
+              id: userId,
+              firstName: data.user.firstname,
+              lastName: data.user.lastname,
+              avatarUrl: undefined, // Not stored as URL in DB
+            },
+            average: Math.round(userAverage * 10) / 10,
+            count: userCount,
+          };
+        })
+        .filter(u => u.count > 0);
+
+      response.perUser = perUser;
+
+      // Calculate top 5 and bottom 5 users (min count = 3)
+      const eligibleUsers = perUser.filter(u => u.count >= 3);
+
+      if (eligibleUsers.length > 0) {
+        // Sort by average descending for top users
+        const sortedByAvgDesc = [...eligibleUsers].sort(
+          (a, b) => b.average - a.average,
+        );
+        response.topUsers = sortedByAvgDesc.slice(0, 5).map(u => ({
+          userId: u.user.id,
+          average: u.average,
+          count: u.count,
+        }));
+
+        // Sort by average ascending for bottom users
+        const sortedByAvgAsc = [...eligibleUsers].sort(
+          (a, b) => a.average - b.average,
+        );
+        response.bottomUsers = sortedByAvgAsc.slice(0, 5).map(u => ({
+          userId: u.user.id,
+          average: u.average,
+          count: u.count,
+        }));
+      }
+    }
+
+    return response;
   }
 }

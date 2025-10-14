@@ -14,6 +14,8 @@ import {
   SessionsSummaryDto,
   SessionsTimeseriesDto,
   SessionsListDto,
+  RatingsQueryDto,
+  RatingsSummaryDto,
 } from './dto';
 
 @ApiTags('reports')
@@ -60,5 +62,27 @@ export class ReportsController {
     @Query() query: SessionsListQueryDto,
   ): Promise<SessionsListDto> {
     return this.reportsService.getSessionsList(query);
+  }
+}
+
+@ApiTags('reports')
+@ApiBearerAuth()
+@Controller('reports/ratings')
+@UseGuards(AdminGuard)
+export class RatingsReportsController {
+  constructor(private readonly reportsService: ReportsService) {}
+
+  @Get('summary')
+  @ApiOperation({ summary: 'Get ratings analytics summary' })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Returns summary statistics for ratings in the date range, including global aggregates, per-user stats, top/bottom performers, and contract split',
+    type: RatingsSummaryDto,
+  })
+  async getRatingsSummary(
+    @Query() query: RatingsQueryDto,
+  ): Promise<RatingsSummaryDto> {
+    return this.reportsService.getRatingsSummary(query);
   }
 }
