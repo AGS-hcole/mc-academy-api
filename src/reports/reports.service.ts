@@ -359,34 +359,31 @@ export class ReportsService {
     // Validate date range
     const fromDate = new Date(from);
     const toDate = new Date(to);
-
     if (fromDate >= toDate) {
       throw new BadRequestException('from date must be before to date');
     }
 
     // Validate user exists if provided
+    let selectedUser: {
+      id: string;
+      firstname: string;
+      lastname: string;
+    } | null = null;
     if (userId) {
-      const userExists = await this.prisma.user.findUnique({
+      selectedUser = await this.prisma.user.findUnique({
         where: { id: userId },
+        select: { id: true, firstname: true, lastname: true },
       });
-      if (!userExists) {
+      if (!selectedUser) {
         throw new BadRequestException('User not found');
       }
     }
 
     // Build where clause for ratings
-    // Only consider ratings where attendance status is YES
-    const ratingsWhere: any = {
-      session: {
-        date: { gte: fromDate, lt: toDate },
-      },
-      // Join with attendance to ensure status YES
+    const ratingsWhere: Prisma.SessionRatingWhereInput = {
+      session: { date: { gte: fromDate, lt: toDate } },
+      ...(userId ? { userId } : {}),
     };
-
-    // Add user filter if provided
-    if (userId) {
-      ratingsWhere.userId = userId;
-    }
 
     // Get all ratings with session and attendance data
     const ratings = await this.prisma.sessionRating.findMany({
@@ -395,21 +392,11 @@ export class ReportsService {
         session: {
           include: {
             attendances: {
-              select: {
-                userId: true,
-                status: true,
-                outOfContract: true,
-              },
+              select: { userId: true, status: true, outOfContract: true },
             },
           },
         },
-        user: {
-          select: {
-            id: true,
-            firstname: true,
-            lastname: true,
-          },
-        },
+        user: { select: { id: true, firstname: true, lastname: true } },
       },
     });
 
@@ -422,29 +409,27 @@ export class ReportsService {
     });
 
     // Apply contract scope filter
-    let filteredRatings = validRatings;
-    if (contractScope !== 'all') {
-      filteredRatings = validRatings.filter(rating => {
-        const attendance = rating.session.attendances.find(
-          att => att.userId === rating.userId,
-        );
-        if (contractScope === 'contract') {
-          return attendance && !attendance.outOfContract;
-        } else if (contractScope === 'noContract') {
-          return attendance && attendance.outOfContract;
-        }
-        return true;
-      });
-    }
+    const filteredRatings =
+      contractScope === 'all'
+        ? validRatings
+        : validRatings.filter(rating => {
+            const attendance = rating.session.attendances.find(
+              att => att.userId === rating.userId,
+            );
+            if (!attendance) return false;
+            if (contractScope === 'contract') return !attendance.outOfContract;
+            if (contractScope === 'noContract') return attendance.outOfContract;
+            return true;
+          });
 
-    // Calculate global aggregates
+    // Global aggregates
     const count = filteredRatings.length;
     const average =
       count > 0
-        ? filteredRatings.reduce((sum, r) => sum + r.score, 0) / count
+        ? filteredRatings.reduce((s, r) => s + r.score, 0) / count
         : null;
 
-    // Calculate distribution (1-10 scale)
+    // Distribution 1..10
     const distribution: RatingDistribution = {
       '1': 0,
       '2': 0,
@@ -457,19 +442,12 @@ export class ReportsService {
       '9': 0,
       '10': 0,
     };
-
-    for (const rating of filteredRatings) {
-      const score = rating.score.toString() as keyof RatingDistribution;
-      if (score in distribution) {
-        distribution[score]++;
-      }
+    for (const r of filteredRatings) {
+      const key = String(r.score) as keyof RatingDistribution;
+      if (distribution[key] !== undefined) distribution[key]++;
     }
 
-    // Calculate ratedSessions and unratedSessions
-    const ratedSessionIds = new Set(filteredRatings.map(r => r.sessionId));
-    const ratedSessions = ratedSessionIds.size;
-
-    // Get total sessions in range with attendances status YES
+    // Rated / unrated sessions (YES attendances only; respects user filter if any)
     const sessionsWhere: Prisma.SessionWhereInput = {
       date: { gte: fromDate, lt: toDate },
       attendances: {
@@ -485,104 +463,101 @@ export class ReportsService {
       select: {
         id: true,
         attendances: {
-          select: {
-            outOfContract: true,
-            userId: true,
-            status: true,
-          },
+          select: { outOfContract: true, userId: true, status: true },
         },
       },
     });
 
-    // Apply contract scope filter to total sessions count
-    let filteredSessions = allSessions;
-    if (contractScope !== 'all') {
-      filteredSessions = allSessions.filter(session => {
-        const relevantAttendances = userId
-          ? session.attendances.filter(
-              att => att.userId === userId && att.status === 'YES',
-            )
-          : session.attendances.filter(att => att.status === 'YES');
+    const filteredSessions =
+      contractScope === 'all'
+        ? allSessions
+        : allSessions.filter(session => {
+            const relevant = userId
+              ? session.attendances.filter(
+                  a => a.userId === userId && a.status === 'YES',
+                )
+              : session.attendances.filter(a => a.status === 'YES');
+            if (contractScope === 'contract')
+              return relevant.some(a => !a.outOfContract);
+            if (contractScope === 'noContract')
+              return relevant.some(a => a.outOfContract);
+            return true;
+          });
 
-        if (contractScope === 'contract') {
-          return relevantAttendances.some(att => !att.outOfContract);
-        } else if (contractScope === 'noContract') {
-          return relevantAttendances.some(att => att.outOfContract);
-        }
-        return true;
-      });
-    }
-
+    const ratedSessionIds = new Set(filteredRatings.map(r => r.sessionId));
+    const ratedSessions = ratedSessionIds.size;
     const totalSessions = filteredSessions.length;
     const unratedSessions = Math.max(0, totalSessions - ratedSessions);
 
-    // Calculate contract split
+    // Contract split (counts of ratings)
     let contractCount = 0;
     let nonContractCount = 0;
-
-    for (const rating of filteredRatings) {
-      const attendance = rating.session.attendances.find(
-        att => att.userId === rating.userId,
-      );
-      if (attendance) {
-        if (attendance.outOfContract) {
-          nonContractCount++;
-        } else {
-          contractCount++;
-        }
-      }
+    for (const r of filteredRatings) {
+      const att = r.session.attendances.find(a => a.userId === r.userId);
+      if (!att) continue;
+      if (att.outOfContract) nonContractCount++;
+      else contractCount++;
     }
 
-    // Build response
+    // Base response
     const response: RatingsSummaryDto = {
       period: { from, to },
       scope: { userId, contractScope },
-      global: {
-        average,
-        count,
-        distribution,
-        ratedSessions,
-        unratedSessions,
-      },
-      contractSplit: {
-        contractCount,
-        nonContractCount,
-      },
+      global: { average, count, distribution, ratedSessions, unratedSessions },
+      contractSplit: { contractCount, nonContractCount },
     };
 
-    // Calculate per-user aggregates if userId not specified
-    if (!userId) {
-      // Group ratings by user
+    // ---------- NEW: build perUser even when userId is provided ----------
+    if (userId) {
+      // Les filteredRatings sont déjà filtrés pour cet utilisateur (si userId présent)
+      const userCount = filteredRatings.length;
+      const userAverage =
+        userCount > 0
+          ? filteredRatings.reduce((s, r) => s + r.score, 0) / userCount
+          : 0;
+
+      response.perUser = [
+        {
+          user: {
+            id: selectedUser!.id,
+            firstName: selectedUser!.firstname,
+            lastName: selectedUser!.lastname,
+            avatarUrl: undefined,
+          },
+          average: Math.round(userAverage * 10) / 10,
+          count: userCount,
+        },
+      ];
+
+      // On ne calcule PAS topUsers/bottomUsers en mode filtré (array vide ou undefined au choix)
+      response.topUsers = [];
+      response.bottomUsers = [];
+    } else {
+      // ---------- EXISTANT : calcul perUser + top/bottom quand pas de filtre user ----------
       const userRatingsMap = new Map<
         string,
         { ratings: typeof filteredRatings; user: any }
       >();
-
-      for (const rating of filteredRatings) {
-        if (!userRatingsMap.has(rating.userId)) {
-          userRatingsMap.set(rating.userId, {
-            ratings: [],
-            user: rating.user,
-          });
+      for (const r of filteredRatings) {
+        if (!userRatingsMap.has(r.userId)) {
+          userRatingsMap.set(r.userId, { ratings: [], user: r.user });
         }
-        userRatingsMap.get(rating.userId)!.ratings.push(rating);
+        userRatingsMap.get(r.userId)!.ratings.push(r);
       }
 
-      // Calculate per-user stats
       const perUser = Array.from(userRatingsMap.entries())
-        .map(([userId, data]) => {
+        .map(([uid, data]) => {
           const userCount = data.ratings.length;
-          const userAverage =
-            data.ratings.reduce((sum, r) => sum + r.score, 0) / userCount;
-
+          const avg =
+            data.ratings.reduce((s, rr) => s + rr.score, 0) / userCount;
           return {
             user: {
-              id: userId,
+              id: uid,
               firstName: data.user.firstname,
               lastName: data.user.lastname,
-              avatarUrl: undefined, // Not stored as URL in DB
+              avatarUrl: undefined,
             },
-            average: Math.round(userAverage * 10) / 10,
+            average: Math.round(avg * 10) / 10,
             count: userCount,
           };
         })
@@ -590,31 +565,24 @@ export class ReportsService {
 
       response.perUser = perUser;
 
-      // Calculate top 5 and bottom 5 users (min count = 3)
-      const eligibleUsers = perUser.filter(u => u.count >= 3);
-
-      if (eligibleUsers.length > 0) {
-        // Sort by average descending for top users
-        const sortedByAvgDesc = [...eligibleUsers].sort(
-          (a, b) => b.average - a.average,
-        );
-        response.topUsers = sortedByAvgDesc.slice(0, 5).map(u => ({
+      const eligible = perUser.filter(u => u.count >= 3);
+      if (eligible.length > 0) {
+        const byDesc = [...eligible].sort((a, b) => b.average - a.average);
+        response.topUsers = byDesc.slice(0, 5).map(u => ({
           userId: u.user.id,
           average: u.average,
           count: u.count,
         }));
 
-        // Sort by average ascending for bottom users
-        const sortedByAvgAsc = [...eligibleUsers].sort(
-          (a, b) => a.average - b.average,
-        );
-        response.bottomUsers = sortedByAvgAsc.slice(0, 5).map(u => ({
+        const byAsc = [...eligible].sort((a, b) => a.average - b.average);
+        response.bottomUsers = byAsc.slice(0, 5).map(u => ({
           userId: u.user.id,
           average: u.average,
           count: u.count,
         }));
       }
     }
+    // ---------- END NEW ----------
 
     return response;
   }
