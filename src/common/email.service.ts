@@ -1,25 +1,27 @@
-import { Injectable } from '@nestjs/common';
-import * as nodemailer from 'nodemailer';
+import { Injectable, Logger } from '@nestjs/common';
+import * as Brevo from '@getbrevo/brevo';
 import * as fs from 'fs';
 import * as path from 'path';
 
+// Extend TransactionalEmailsApi to access protected authentications
+class BrevoEmailApi extends Brevo.TransactionalEmailsApi {
+  configureApiKey(apiKey: string) {
+    this.authentications.apiKey.apiKey = apiKey;
+  }
+}
+
 @Injectable()
 export class EmailService {
-  private transporter;
+  private readonly logger = new Logger(EmailService.name);
+  private apiInstance: BrevoEmailApi;
 
   /**
    * Constructor
    */
   constructor() {
-    this.transporter = nodemailer.createTransport({
-      host: 'smtp.office365.com',
-      port: 587,
-      secure: false, // true for 465, false for other ports
-      auth: {
-        user: process.env.M365_EMAIL,
-        pass: process.env.M365_EMAIL_PASSWORD,
-      },
-    });
+    // Initialize Brevo API
+    this.apiInstance = new BrevoEmailApi();
+    this.apiInstance.configureApiKey(process.env.BREVO_API_KEY || '');
   }
 
   // -----------------------------------------------------------------------------------------------------
@@ -32,23 +34,42 @@ export class EmailService {
     template: string,
     replacements: Record<string, string>,
   ) {
-    // Load the template and set the replacement variables
-    const htmlTemplate = await this.loadEmailTemplate(
-      `${template}.template.html`,
-      replacements,
-    );
+    try {
+      // Load the template and set the replacement variables
+      const htmlTemplate = await this.loadEmailTemplate(
+        `${template}.template.html`,
+        replacements,
+      );
 
-    // Email settings
-    const mailOptions = {
-      from: process.env.M365_EMAIL,
-      to: to,
-      cc: cc,
-      subject: subject,
-      html: htmlTemplate,
-    };
+      // Prepare sender
+      const sender = {
+        email: process.env.BREVO_SENDER_EMAIL || process.env.M365_EMAIL || '',
+        name: process.env.BREVO_SENDER_NAME || 'MyCenter Academy',
+      };
 
-    // Seznd the email accordingly
-    await this.transporter.sendMail(mailOptions);
+      // Prepare recipient
+      const toRecipients = [{ email: to }];
+
+      // Prepare CC recipients if provided
+      const ccRecipients = cc ? [{ email: cc }] : undefined;
+
+      // Create email object
+      const sendSmtpEmail = new Brevo.SendSmtpEmail();
+      sendSmtpEmail.sender = sender;
+      sendSmtpEmail.to = toRecipients;
+      sendSmtpEmail.cc = ccRecipients;
+      sendSmtpEmail.subject = subject;
+      sendSmtpEmail.htmlContent = htmlTemplate;
+
+      // Send the email
+      await this.apiInstance.sendTransacEmail(sendSmtpEmail);
+      this.logger.log(`Email sent successfully to ${to}: ${subject}`);
+    } catch (error) {
+      this.logger.error(
+        `Failed to send email to ${to}: ${error?.message ?? error}`,
+      );
+      throw error;
+    }
   }
 
   // -----------------------------------------------------------------------------------------------------

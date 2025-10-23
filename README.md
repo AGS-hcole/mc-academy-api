@@ -36,8 +36,13 @@ The application uses the following environment variables, which should be define
 
 ### Mail Settings
 
-- `M365_EMAIL`: The email address used for sending notifications.
-- `M365_EMAIL_PASSWORD`: The password for the notification email account.
+- `BREVO_API_KEY`: The Brevo (formerly Sendinblue) API key for sending emails.
+- `BREVO_SENDER_EMAIL`: The email address used as the sender for notifications.
+- `BREVO_SENDER_NAME`: (Optional) The sender name for emails (default: "MyCenter Academy").
+
+#### Deprecated (now using Brevo)
+- `M365_EMAIL`: (Deprecated) The email address used for sending notifications.
+- `M365_EMAIL_PASSWORD`: (Deprecated) The password for the notification email account.
 
 ### App Settings
 
