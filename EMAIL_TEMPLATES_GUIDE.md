@@ -83,35 +83,45 @@ Tous les templates sont **100% responsive** et s'adaptent automatiquement à :
 
 ![Email de réinitialisation](https://github.com/user-attachments/assets/e460d29b-6bfa-4c40-b72e-e6e932dc8af1)
 
-## 🏗️ Structure commune
+## 🏗️ Architecture du système de templates
 
-Tous les templates partagent une structure cohérente :
+Le système utilise une **architecture modulaire en 2 couches** :
 
-### 1. En-tête (Header)
+### 1. Layout de base (`base-layout.template.html`)
+
+Le layout de base fournit la structure commune à tous les emails :
+
 ```html
-- Dégradé bleu My Center Academy
-- Logo texte "🎾 My Center Academy"
-- Slogan "Excellence en Tennis"
+- En-tête (Header)
+  - Dégradé bleu My Center Academy
+  - Logo texte "🎾 My Center Academy"
+  - Slogan "Excellence en Tennis"
+
+- Zone de contenu ({{content}})
+  - Placeholder pour injecter le contenu spécifique
+
+- Pied de page (Footer)
+  - Nom et description de l'académie
+  - Copyright et année automatique
+  - Raison de l'envoi de l'email
 ```
 
-### 2. Contenu principal (Main Content)
-```html
-- Fond blanc
-- Padding généreux
-- Icône contextuelle en haut
-- Titre principal
-- Contenu spécifique
-- Bouton CTA proéminent
-- Informations complémentaires
-```
+### 2. Templates de contenu (`*-content.template.html`)
 
-### 3. Pied de page (Footer)
-```html
-- Fond gris clair
-- Nom et description de l'académie
-- Copyright et année automatique
-- Raison de l'envoi de l'email
-```
+Chaque email a son propre template de contenu qui est injecté dans le layout :
+
+- `welcome-email-content.template.html` - Contenu de l'email de bienvenue
+- `reset-password-content.template.html` - Contenu de l'email de réinitialisation
+
+### 3. Application automatique du layout
+
+Le système applique automatiquement le layout lors de la construction des emails :
+
+1. **Chargement du layout de base** : `base-layout.template.html`
+2. **Chargement du contenu spécifique** : `{template}-content.template.html`
+3. **Remplacement des variables** dans le contenu
+4. **Injection du contenu** dans le placeholder `{{content}}` du layout
+5. **Remplacement des variables** restantes (title, year, preheader)
 
 ## 🔧 Utilisation des templates
 
@@ -119,12 +129,20 @@ Tous les templates partagent une structure cohérente :
 
 Les templates utilisent la syntaxe Mustache `{{variable}}` pour les variables dynamiques. Le système remplace automatiquement ces variables lors de l'envoi.
 
+**Le système gère automatiquement** :
+1. Le chargement du layout de base
+2. Le chargement du template de contenu correspondant
+3. L'injection du contenu dans le layout
+4. Le remplacement de toutes les variables
+
 **Exemple** :
 ```javascript
 const replacements = {
   fullname: 'Jean Dupont',
   url: 'https://app.mycenteracademy.fr/reset-password?token=abc123',
-  year: new Date().getFullYear().toString()
+  year: new Date().getFullYear().toString(),
+  title: 'Bienvenue à My Center Academy', // Optionnel
+  preheader: 'Votre compte a été créé' // Optionnel
 };
 
 await emailService.sendTemplateEmail(
@@ -136,17 +154,43 @@ await emailService.sendTemplateEmail(
 );
 ```
 
+### Flux de construction d'email
+
+```
+1. EmailService.sendTemplateEmail('welcome-email', replacements)
+   ↓
+2. Charge base-layout.template.html
+   ↓
+3. Charge welcome-email-content.template.html
+   ↓
+4. Remplace {{fullname}}, {{url}} dans le contenu
+   ↓
+5. Injecte contenu dans {{content}} du layout
+   ↓
+6. Remplace {{year}}, {{title}}, {{preheader}} dans le layout
+   ↓
+7. Email final prêt à être envoyé via Brevo
+```
+
 ### Variables requises par template
 
-#### welcome-email.template.html
+#### Variables de contenu (dans *-content.template.html)
+
+**welcome-email-content.template.html**
 - ✅ `fullname` : Nom complet de l'utilisateur
 - ✅ `url` : URL pour définir le mot de passe
-- ✅ `year` : Année en cours
 
-#### reset-password.template.html
+**reset-password-content.template.html**
 - ✅ `fullname` : Nom complet de l'utilisateur
 - ✅ `url` : URL de réinitialisation
-- ✅ `year` : Année en cours
+
+#### Variables du layout (dans base-layout.template.html)
+
+Automatiquement gérées par le système :
+- ✅ `year` : Année en cours (pour le copyright)
+- ✅ `title` : Titre de la page HTML (optionnel, défaut: "My Center Academy")
+- ✅ `preheader` : Texte de prévisualisation (optionnel, défaut: "Email de My Center Academy")
+- ✅ `content` : Contenu injecté automatiquement
 
 ## 🎯 Bonnes pratiques
 
@@ -223,11 +267,41 @@ Les templates ont été testés avec :
 
 ### Création d'un nouveau template
 
-1. Copiez un template existant comme base
-2. Modifiez le contenu principal
-3. Ajustez les couleurs des boutons CTA si nécessaire
-4. Ajoutez les variables Mustache requises
-5. Documentez les nouvelles variables
+**Méthode recommandée** (avec layout automatique) :
+
+1. **Créez un template de contenu** : `src/templates/mon-email-content.template.html`
+   ```html
+   <!-- Icône -->
+   <table role="presentation">...</table>
+   
+   <!-- Titre -->
+   <h2>{{titre}}</h2>
+   
+   <!-- Contenu -->
+   <p>{{message}}</p>
+   
+   <!-- Bouton CTA -->
+   <table role="presentation">
+     <a href="{{url}}">Mon Action</a>
+   </table>
+   ```
+
+2. **Le système appliquera automatiquement** le layout de base
+
+3. **Utilisez le nouveau template** :
+   ```javascript
+   await emailService.sendTemplateEmail(
+     'user@example.com',
+     '',
+     'Mon Email',
+     'mon-email', // Nom sans -content.template.html
+     { titre: 'Hello', message: 'World', url: '...' }
+   );
+   ```
+
+**Méthode alternative** (template complet) :
+
+Si vous avez besoin d'un layout personnalisé, créez `mon-email.template.html` avec la structure HTML complète. Le système détectera qu'il n'existe pas de version `-content` et utilisera le template complet.
 
 ## 🎨 Personnalisation des couleurs
 
