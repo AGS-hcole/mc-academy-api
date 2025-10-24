@@ -21,7 +21,10 @@ export class EmailService {
   constructor() {
     // Initialize Brevo API
     this.apiInstance = new BrevoEmailApi();
-    this.apiInstance.configureApiKey(process.env.BREVO_API_KEY || '');
+    this.apiInstance.setApiKey(
+      Brevo.TransactionalEmailsApiApiKeys.apiKey,
+      process.env.BREVO_API_KEY ?? '',
+    );
   }
 
   // -----------------------------------------------------------------------------------------------------
@@ -43,7 +46,7 @@ export class EmailService {
 
       // Prepare sender
       const sender = {
-        email: process.env.BREVO_SENDER_EMAIL || process.env.M365_EMAIL || '',
+        email: process.env.BREVO_SENDER_EMAIL || '',
         name: process.env.BREVO_SENDER_NAME || 'MyCenter Academy',
       };
 
@@ -65,8 +68,13 @@ export class EmailService {
       await this.apiInstance.sendTransacEmail(sendSmtpEmail);
       this.logger.log(`Email sent successfully to ${to}: ${subject}`);
     } catch (error) {
+      // Log riche : le SDK met souvent les infos sur e.response / e.body
+      const status = error?.status ?? error?.response?.status;
+      const statusText = error?.statusText ?? error?.response?.statusText;
+      const body =
+        error?.body ?? error?.response?.text ?? error?.response?.data;
       this.logger.error(
-        `Failed to send email to ${to}: ${error?.message ?? error}`,
+        `Brevo ERR: ${status} ${statusText} ${typeof body === 'string' ? body : JSON.stringify(body)}`,
       );
       throw error;
     }
