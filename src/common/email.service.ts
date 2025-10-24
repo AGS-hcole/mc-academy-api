@@ -1,25 +1,30 @@
-import { Injectable } from '@nestjs/common';
-import * as nodemailer from 'nodemailer';
+import { Injectable, Logger } from '@nestjs/common';
+import * as Brevo from '@getbrevo/brevo';
 import * as fs from 'fs';
 import * as path from 'path';
 
+// Extend TransactionalEmailsApi to access protected authentications
+class BrevoEmailApi extends Brevo.TransactionalEmailsApi {
+  configureApiKey(apiKey: string) {
+    this.authentications.apiKey.apiKey = apiKey;
+  }
+}
+
 @Injectable()
 export class EmailService {
-  private transporter;
+  private readonly logger = new Logger(EmailService.name);
+  private apiInstance: BrevoEmailApi;
 
   /**
    * Constructor
    */
   constructor() {
-    this.transporter = nodemailer.createTransport({
-      host: 'smtp.office365.com',
-      port: 587,
-      secure: false, // true for 465, false for other ports
-      auth: {
-        user: process.env.M365_EMAIL,
-        pass: process.env.M365_EMAIL_PASSWORD,
-      },
-    });
+    // Initialize Brevo API
+    this.apiInstance = new BrevoEmailApi();
+    this.apiInstance.setApiKey(
+      Brevo.TransactionalEmailsApiApiKeys.apiKey,
+      process.env.BREVO_API_KEY ?? '',
+    );
   }
 
   // -----------------------------------------------------------------------------------------------------
@@ -32,23 +37,47 @@ export class EmailService {
     template: string,
     replacements: Record<string, string>,
   ) {
-    // Load the template and set the replacement variables
-    const htmlTemplate = await this.loadEmailTemplate(
-      `${template}.template.html`,
-      replacements,
-    );
+    try {
+      // Load the template and set the replacement variables
+      const htmlTemplate = await this.loadEmailTemplate(
+        `${template}.template.html`,
+        replacements,
+      );
 
-    // Email settings
-    const mailOptions = {
-      from: process.env.M365_EMAIL,
-      to: to,
-      cc: cc,
-      subject: subject,
-      html: htmlTemplate,
-    };
+      // Prepare sender
+      const sender = {
+        email: process.env.BREVO_SENDER_EMAIL || '',
+        name: process.env.BREVO_SENDER_NAME || 'MyCenter Academy',
+      };
 
-    // Seznd the email accordingly
-    await this.transporter.sendMail(mailOptions);
+      // Prepare recipient
+      const toRecipients = [{ email: to }];
+
+      // Prepare CC recipients if provided
+      const ccRecipients = cc ? [{ email: cc }] : undefined;
+
+      // Create email object
+      const sendSmtpEmail = new Brevo.SendSmtpEmail();
+      sendSmtpEmail.sender = sender;
+      sendSmtpEmail.to = toRecipients;
+      sendSmtpEmail.cc = ccRecipients;
+      sendSmtpEmail.subject = subject;
+      sendSmtpEmail.htmlContent = htmlTemplate;
+
+      // Send the email
+      await this.apiInstance.sendTransacEmail(sendSmtpEmail);
+      this.logger.log(`Email sent successfully to ${to}: ${subject}`);
+    } catch (error) {
+      // Log riche : le SDK met souvent les infos sur e.response / e.body
+      const status = error?.status ?? error?.response?.status;
+      const statusText = error?.statusText ?? error?.response?.statusText;
+      const body =
+        error?.body ?? error?.response?.text ?? error?.response?.data;
+      this.logger.error(
+        `Brevo ERR: ${status} ${statusText} ${typeof body === 'string' ? body : JSON.stringify(body)}`,
+      );
+      throw error;
+    }
   }
 
   // -----------------------------------------------------------------------------------------------------
@@ -58,18 +87,63 @@ export class EmailService {
     templatePath: string,
     replacements: Record<string, string>,
   ): Promise<string> {
-    // Read the template HTML file
-    const filePath = path.resolve(__dirname, '../templates/', templatePath);
-    let template = fs.readFileSync(filePath, 'utf-8');
+    // Load base layout
+    const layoutPath = path.resolve(
+      __dirname,
+      '../templates/',
+      'base-layout.template.html',
+    );
+    let layout = fs.readFileSync(layoutPath, 'utf-8');
 
-    // Replace the placeholders
+    // Load content template (try with -content suffix first)
+    const contentTemplateName = templatePath.replace('.template.html', '');
+    const contentPath = path.resolve(
+      __dirname,
+      '../templates/',
+      `${contentTemplateName}-content.template.html`,
+    );
+
+    // Check if content-only template exists, otherwise use full template
+    let content: string;
+    if (fs.existsSync(contentPath)) {
+      // Use content-only template
+      content = fs.readFileSync(contentPath, 'utf-8');
+    } else {
+      // Fallback to full template (for backward compatibility)
+      const fullPath = path.resolve(__dirname, '../templates/', templatePath);
+      return this.replaceVariables(
+        fs.readFileSync(fullPath, 'utf-8'),
+        replacements,
+      );
+    }
+
+    // Replace variables in content first
+    content = this.replaceVariables(content, replacements);
+
+    // Inject content into layout
+    layout = layout.replace('{{content}}', content);
+
+    // Replace remaining variables in layout (like year, title, preheader)
+    layout = this.replaceVariables(layout, {
+      ...replacements,
+      title: replacements.title || 'My Center Academy',
+      preheader: replacements.preheader || 'Email de My Center Academy',
+    });
+
+    return layout;
+  }
+
+  private replaceVariables(
+    template: string,
+    replacements: Record<string, string>,
+  ): string {
+    let result = template;
     for (const key in replacements) {
       if (replacements.hasOwnProperty(key)) {
         const regex = new RegExp(`{{${key}}}`, 'g');
-        template = template.replace(regex, replacements[key]);
+        result = result.replace(regex, replacements[key]);
       }
     }
-
-    return template;
+    return result;
   }
 }

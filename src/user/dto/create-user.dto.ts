@@ -78,31 +78,4 @@ export class CreateUserDto {
   @IsOptional()
   @IsEnum(FormulaType)
   formula?: FormulaType;
-
-  @ApiPropertyOptional({
-    description: 'Email notifications enabled',
-    type: 'boolean',
-    example: true,
-  })
-  @IsOptional()
-  @IsBoolean()
-  notifyEmail?: boolean;
-
-  @ApiPropertyOptional({
-    description: 'SMS notifications enabled',
-    type: 'boolean',
-    example: false,
-  })
-  @IsOptional()
-  @IsBoolean()
-  notifySMS?: boolean;
-
-  @ApiPropertyOptional({
-    description: 'WhatsApp notifications enabled',
-    type: 'boolean',
-    example: false,
-  })
-  @IsOptional()
-  @IsBoolean()
-  notifyWhatsApp?: boolean;
 }

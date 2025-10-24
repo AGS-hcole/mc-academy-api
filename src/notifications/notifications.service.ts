@@ -1,6 +1,6 @@
 // src/notifications/notifications.service.ts
 import { Injectable, Logger } from '@nestjs/common';
-import nodemailer, { Transporter } from 'nodemailer';
+import * as Brevo from '@getbrevo/brevo';
 import { Session, SessionSlot, User } from '@prisma/client';
 import { DateTime } from 'luxon';
 import twilio, { Twilio } from 'twilio';
@@ -8,20 +8,23 @@ import { PrismaService } from 'src/prisma/prisma.service';
 
 const TZ = 'Europe/Paris';
 
+// Extend TransactionalEmailsApi to access protected authentications
+class BrevoEmailApi extends Brevo.TransactionalEmailsApi {
+  configureApiKey(apiKey: string) {
+    this.authentications.apiKey.apiKey = apiKey;
+  }
+}
+
 @Injectable()
 export class NotificationsService {
   private readonly logger = new Logger(NotificationsService.name);
-  private mailer: Transporter;
+  private apiInstance: BrevoEmailApi;
   private twilio?: Twilio;
 
   constructor(private prisma: PrismaService) {
-    // Email transport
-    this.mailer = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT ?? 587),
-      secure: false,
-      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-    });
+    // Initialize Brevo API for email
+    this.apiInstance = new BrevoEmailApi();
+    this.apiInstance.configureApiKey(process.env.BREVO_API_KEY || '');
 
     // Twilio (optional)
     if (process.env.TWILIO_SID && process.env.TWILIO_TOKEN) {
@@ -185,9 +188,26 @@ export class NotificationsService {
     html: string,
     text: string,
   ) {
-    const from = process.env.SMTP_FROM ?? process.env.SMTP_USER!;
     try {
-      await this.mailer.sendMail({ from, to, subject, html, text });
+      // Prepare sender
+      const sender = {
+        email: process.env.BREVO_SENDER_EMAIL || '',
+        name: process.env.BREVO_SENDER_NAME || 'My Center Academy',
+      };
+
+      // Prepare recipient
+      const toRecipients = [{ email: to }];
+
+      // Create email object
+      const sendSmtpEmail = new Brevo.SendSmtpEmail();
+      sendSmtpEmail.sender = sender;
+      sendSmtpEmail.to = toRecipients;
+      sendSmtpEmail.subject = subject;
+      sendSmtpEmail.htmlContent = html;
+      sendSmtpEmail.textContent = text;
+
+      // Send the email
+      await this.apiInstance.sendTransacEmail(sendSmtpEmail);
       this.logger.log(`Email sent to ${to}: ${subject}`);
     } catch (e) {
       this.logger.error(`Email failed to ${to}: ${e?.message ?? e}`);

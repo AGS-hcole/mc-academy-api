@@ -60,10 +60,6 @@ export class UserService {
       if (dto.fftLicenseNumber !== undefined)
         userData.fftLicenseNumber = dto.fftLicenseNumber;
       if (dto.formula !== undefined) userData.formula = dto.formula;
-      if (dto.notifyEmail !== undefined) userData.notifyEmail = dto.notifyEmail;
-      if (dto.notifySMS !== undefined) userData.notifySMS = dto.notifySMS;
-      if (dto.notifyWhatsApp !== undefined)
-        userData.notifyWhatsApp = dto.notifyWhatsApp;
 
       const user = await this.prisma.user.create({
         data: userData,
@@ -76,6 +72,10 @@ export class UserService {
           phone: true,
           birthDate: true,
           fftLicenseNumber: true,
+          avatarData: true,
+          avatarMime: true,
+          backgroundData: true,
+          backgroundMime: true,
           formula: true,
           notifyEmail: true,
           notifySMS: true,
