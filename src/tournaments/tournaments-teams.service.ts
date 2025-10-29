@@ -2,7 +2,6 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
-  ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import {
@@ -162,10 +161,10 @@ export class TournamentsTeamsService {
       throw new NotFoundException('Tournament not found');
     }
 
-    if (
-      tournament.status === TournamentStatus.ARCHIVED
-    ) {
-      throw new BadRequestException('Cannot generate teams for archived tournament');
+    if (tournament.status === TournamentStatus.ARCHIVED) {
+      throw new BadRequestException(
+        'Cannot generate teams for archived tournament',
+      );
     }
 
     if (tournament.participants.length < 2) {
@@ -216,7 +215,10 @@ export class TournamentsTeamsService {
       );
 
       // Check for odd participants
-      if (!allowOddParticipant && availableParticipants.length % teamSize !== 0) {
+      if (
+        !allowOddParticipant &&
+        availableParticipants.length % teamSize !== 0
+      ) {
         throw new BadRequestException(
           `Odd number of participants (${availableParticipants.length}). Set allowOddParticipant=true or adjust participants.`,
         );
@@ -235,9 +237,10 @@ export class TournamentsTeamsService {
       }
 
       // Determine starting orderIndex (after locked teams)
-      const maxLockedIndex = preserveLocked && lockedTeams.length > 0
-        ? Math.max(...lockedTeams.map(t => t.orderIndex))
-        : -1;
+      const maxLockedIndex =
+        preserveLocked && lockedTeams.length > 0
+          ? Math.max(...lockedTeams.map(t => t.orderIndex))
+          : -1;
       let nextOrderIndex = maxLockedIndex + 1;
 
       // Create new teams
@@ -299,7 +302,9 @@ export class TournamentsTeamsService {
         });
 
         if (currentTeam?.locked) {
-          throw new BadRequestException('Cannot move participant from locked team');
+          throw new BadRequestException(
+            'Cannot move participant from locked team',
+          );
         }
 
         await tx.tournamentTeamMember.delete({
@@ -319,13 +324,17 @@ export class TournamentsTeamsService {
         }
 
         if (targetTeam.locked) {
-          throw new BadRequestException('Cannot add participant to locked team');
+          throw new BadRequestException(
+            'Cannot add participant to locked team',
+          );
         }
 
         // Check team capacity (default 2)
         const teamSize = 2;
         if (targetTeam.members.length >= teamSize) {
-          throw new BadRequestException(`Team is full (max ${teamSize} members)`);
+          throw new BadRequestException(
+            `Team is full (max ${teamSize} members)`,
+          );
         }
 
         await tx.tournamentTeamMember.create({
@@ -362,7 +371,9 @@ export class TournamentsTeamsService {
         participantA.tournamentId !== tournamentId ||
         participantB.tournamentId !== tournamentId
       ) {
-        throw new NotFoundException('One or both participants not found in this tournament');
+        throw new NotFoundException(
+          'One or both participants not found in this tournament',
+        );
       }
 
       const membershipA = participantA.teamMemberships[0];
@@ -374,7 +385,9 @@ export class TournamentsTeamsService {
           where: { id: membershipA.teamId },
         });
         if (teamA?.locked) {
-          throw new BadRequestException('Cannot swap participant from locked team');
+          throw new BadRequestException(
+            'Cannot swap participant from locked team',
+          );
         }
       }
 
@@ -383,7 +396,9 @@ export class TournamentsTeamsService {
           where: { id: membershipB.teamId },
         });
         if (teamB?.locked) {
-          throw new BadRequestException('Cannot swap participant from locked team');
+          throw new BadRequestException(
+            'Cannot swap participant from locked team',
+          );
         }
       }
 
@@ -432,12 +447,13 @@ export class TournamentsTeamsService {
       }
 
       const teamIds = tournament.teams.map(t => t.id);
-      const requestedTeamIds = dto.order.map(o => o.teamId);
 
       // Verify all teams belong to tournament
       for (const item of dto.order) {
         if (!teamIds.includes(item.teamId)) {
-          throw new BadRequestException(`Team ${item.teamId} not found in tournament`);
+          throw new BadRequestException(
+            `Team ${item.teamId} not found in tournament`,
+          );
         }
       }
 
@@ -625,7 +641,7 @@ export class TournamentsTeamsService {
 
     // Simple deterministic shuffle if seed provided
     if (seed !== undefined) {
-      let random = this.seededRandom(seed);
+      const random = this.seededRandom(seed);
       for (let i = shuffled.length - 1; i > 0; i--) {
         const j = Math.floor(random() * (i + 1));
         [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];

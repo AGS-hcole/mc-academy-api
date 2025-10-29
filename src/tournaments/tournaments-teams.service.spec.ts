@@ -6,7 +6,6 @@ import { ParticipationStatus, TournamentStatus } from '@prisma/client';
 
 describe('TournamentsTeamsService', () => {
   let service: TournamentsTeamsService;
-  let prisma: PrismaService;
 
   const mockPrismaService = {
     tournament: {
@@ -41,7 +40,6 @@ describe('TournamentsTeamsService', () => {
     }).compile();
 
     service = module.get<TournamentsTeamsService>(TournamentsTeamsService);
-    prisma = module.get<PrismaService>(PrismaService);
 
     jest.clearAllMocks();
   });
@@ -125,7 +123,9 @@ describe('TournamentsTeamsService', () => {
       const sum1 = 1 + 40;
       const sum2 = 5 + 30;
       const sum3 = 10 + 20;
-      expect(Math.max(sum1, sum2, sum3) - Math.min(sum1, sum2, sum3)).toBeLessThan(12);
+      expect(
+        Math.max(sum1, sum2, sum3) - Math.min(sum1, sum2, sum3),
+      ).toBeLessThan(12);
     });
 
     it('should handle odd number of participants', () => {
@@ -250,8 +250,16 @@ describe('TournamentsTeamsService', () => {
         },
       ];
 
-      const pairs1 = (service as any).generateRandomPairs(participants, 2, 12345);
-      const pairs2 = (service as any).generateRandomPairs(participants, 2, 12345);
+      const pairs1 = (service as any).generateRandomPairs(
+        participants,
+        2,
+        12345,
+      );
+      const pairs2 = (service as any).generateRandomPairs(
+        participants,
+        2,
+        12345,
+      );
 
       // With same seed, should produce same result
       expect(pairs1).toEqual(pairs2);
@@ -286,8 +294,16 @@ describe('TournamentsTeamsService', () => {
         },
       ];
 
-      const pairs1 = (service as any).generateRandomPairs(participants, 2, 12345);
-      const pairs2 = (service as any).generateRandomPairs(participants, 2, 54321);
+      const pairs1 = (service as any).generateRandomPairs(
+        participants,
+        2,
+        12345,
+      );
+      const pairs2 = (service as any).generateRandomPairs(
+        participants,
+        2,
+        54321,
+      );
 
       // Different seeds might produce different results (not guaranteed but likely)
       // Just verify both are valid
@@ -416,9 +432,9 @@ describe('TournamentsTeamsService', () => {
         tournamentId: 't2', // Different tournament
       });
 
-      await expect(
-        service.setTeamLock('t1', 'team1', true),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.setTeamLock('t1', 'team1', true)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 

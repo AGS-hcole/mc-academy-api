@@ -135,8 +135,7 @@ export class TournamentsTeamsController {
   @Patch('swap')
   @ApiOperation({
     summary: 'Swap two participants (Admin only)',
-    description:
-      'Exchange positions of two participants. One can be on bench.',
+    description: 'Exchange positions of two participants. One can be on bench.',
   })
   @ApiResponse({
     status: 200,
@@ -190,7 +189,9 @@ export class TournamentsTeamsController {
       teamId,
       dto.locked,
     );
-    return { message: `Team ${dto.locked ? 'locked' : 'unlocked'} successfully` };
+    return {
+      message: `Team ${dto.locked ? 'locked' : 'unlocked'} successfully`,
+    };
   }
 
   @Delete()
@@ -221,7 +222,8 @@ export class TournamentsTeamsController {
   @Post(':teamId/members')
   @ApiOperation({
     summary: 'Add member to team (Admin only)',
-    description: 'Add a participant to a team. Team must not be locked or full.',
+    description:
+      'Add a participant to a team. Team must not be locked or full.',
   })
   @ApiResponse({
     status: 201,
