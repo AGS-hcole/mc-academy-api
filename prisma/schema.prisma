@@ -61,6 +61,11 @@ enum ParticipationStatus {
   DECLINED
 }
 
+enum PairingMethod {
+  BALANCED
+  RANDOM
+}
+
 // ---------- Core ----------
 model User {
   id                 String    @id @default(uuid())
@@ -250,21 +255,22 @@ model AppSetting {
 
 // ---------- Tournaments ----------
 model Tournament {
-  id           String            @id @default(uuid())
-  title        String
-  type         TournamentType
-  status       TournamentStatus  @default(DRAFT)
-  addressLine1 String
-  addressLine2 String?
-  postalCode   String
-  city         String
-  country      String
-  latitude     Float?            // optional for future map
-  longitude    Float?            // optional for future map
-  startsAt     DateTime
-  endsAt       DateTime
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
+  id            String            @id @default(uuid())
+  title         String
+  type          TournamentType
+  status        TournamentStatus  @default(DRAFT)
+  pairingMethod PairingMethod?    @default(BALANCED)
+  addressLine1  String
+  addressLine2  String?
+  postalCode    String
+  city          String
+  country       String
+  latitude      Float?            // optional for future map
+  longitude     Float?            // optional for future map
+  startsAt      DateTime
+  endsAt        DateTime
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
   
   participants TournamentParticipant[]
   teams        TournamentTeam[]
@@ -280,6 +286,8 @@ model TournamentParticipant {
   userId        String
   status        ParticipationStatus  @default(PENDING) // RSVP
   feedback      String?
+  rankSnapshot  Int?                 // frozen ranking at pairing time
+  seed          Int?                 // optional seeding position (1..N)
   
   tournament    Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -295,6 +303,8 @@ model TournamentTeam {
   tournamentId  String
   orderIndex    Int       // for manual reordering (drag & drop)
   placement     Int?      // 1st, 2nd, 3rd... set at the end (team result)
+  locked        Boolean   @default(false) // locked teams preserved during regeneration
+  notes         String?   // free text for admin
   
   tournament    Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   members       TournamentTeamMember[]
