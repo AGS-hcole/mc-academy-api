@@ -315,3 +315,25 @@ model TournamentTeamMember {
   @@index([teamId])
   @@index([participantId])
 }
+
+// ---------- Public Events ----------
+model PublicEvent {
+  id                     String   @id @default(uuid())
+  slug                   String   @unique
+  name                   String
+  description            String?  @db.Text
+  startTime              DateTime?
+  endTime                DateTime?
+  backgroundImageUrl     String?
+  externalRegistrationUrl String?
+  isPublished            Boolean  @default(false)
+  orderIndex             Int      @default(0)
+
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  @@index([isPublished, orderIndex])
+  @@index([startTime])
+  @@index([endTime])
+  @@map("public_events")
+}
