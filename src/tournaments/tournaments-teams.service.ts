@@ -167,8 +167,6 @@ export class TournamentsTeamsService {
       );
     }
 
-    console.log(tournament);
-
     if (tournament.participants.length < 2) {
       throw new BadRequestException(
         'Cannot generate teams with less than 2 confirmed participants',

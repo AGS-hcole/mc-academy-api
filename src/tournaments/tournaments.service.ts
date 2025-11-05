@@ -293,8 +293,8 @@ export class TournamentsService {
     // Use transaction to replace participants and clear teams
     return this.prisma.$transaction(async tx => {
       // Delete existing teams first (cascade will handle team members)
-      await tx.tournamentTeam.deleteMany({
-        where: { tournamentId: id },
+      await tx.tournamentTeamMember.deleteMany({
+        where: { participant: { userId: { notIn: dto.userIds } } },
       });
 
       // Delete existing participants not in the new list
