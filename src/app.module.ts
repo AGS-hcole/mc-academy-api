@@ -16,7 +16,7 @@ import { UsersModule } from './users/users.module';
 import { MetadataModule } from './metadata/metadata.module';
 import { TournamentsModule } from './tournaments/tournaments.module';
 import { RatingsModule } from './ratings/ratings.module';
-import { EventsModule } from './modules/events/events.module';
+import { EventsModule } from './events/events.module';
 
 @Module({
   imports: [

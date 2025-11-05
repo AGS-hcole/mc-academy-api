@@ -28,7 +28,7 @@ import {
   EventResponseDto,
   PaginatedEventsResponseDto,
 } from './dto';
-import { AdminGuard } from '../../auth/guards/admin.guard';
+import { AdminGuard } from '../auth/guards/admin.guard';
 import { generateQrPng } from './utils/qr.util';
 
 @ApiTags('Events')
