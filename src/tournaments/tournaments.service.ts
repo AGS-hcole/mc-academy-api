@@ -318,7 +318,7 @@ export class TournamentsService {
           create: {
             tournamentId: id,
             userId,
-            status: ParticipationStatus.PENDING,
+            status: ParticipationStatus.CONFIRMED,
           },
         });
       }
