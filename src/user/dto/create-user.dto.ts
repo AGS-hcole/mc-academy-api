@@ -7,6 +7,7 @@ import {
   IsDateString,
   IsEnum,
   IsBoolean,
+  IsNumber,
 } from 'class-validator';
 
 export class CreateUserDto {
@@ -69,6 +70,15 @@ export class CreateUserDto {
   @IsOptional()
   @IsString()
   fftLicenseNumber?: string;
+
+  @ApiPropertyOptional({
+    description: 'Current ranking',
+    type: 'number',
+    example: 1,
+  })
+  @IsOptional()
+  @IsNumber()
+  currentRanking?: number;
 
   @ApiPropertyOptional({
     description: 'Formula type (MORNING, AFTERNOON, FULL)',

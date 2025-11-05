@@ -76,12 +76,12 @@ model User {
   lastname           String
   email              String    @unique
   phone              String?
-  birthDate          DateTime? // date of birth
+  birthDate          DateTime?
   fftLicenseNumber   String?   @unique
+  currentRanking     Int?
 
   // Contract / formula
   formula            FormulaType?
-  currentRanking     Int?      // used for tournament pairing
 
   // Security
   password           String

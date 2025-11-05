@@ -41,6 +41,7 @@ export class AuthService {
           phone: true,
           birthDate: true,
           fftLicenseNumber: true,
+          currentRanking: true,
           formula: true,
           notifyEmail: true,
           notifySMS: true,

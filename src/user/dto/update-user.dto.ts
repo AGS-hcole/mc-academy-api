@@ -7,6 +7,7 @@ import {
   IsEnum,
   IsBoolean,
   IsEmail,
+  IsNumber,
 } from 'class-validator';
 
 export class UpdateUserDto {
@@ -73,6 +74,15 @@ export class UpdateUserDto {
   @IsOptional()
   @IsString()
   fftLicenseNumber?: string;
+
+  @ApiPropertyOptional({
+    description: 'Current ranking',
+    type: 'string',
+    example: '1000',
+  })
+  @IsOptional()
+  @IsNumber()
+  currentRanking?: number;
 
   @ApiPropertyOptional({
     description: 'Formula type (MORNING, AFTERNOON, FULL)',

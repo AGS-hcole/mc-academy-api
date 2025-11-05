@@ -59,6 +59,8 @@ export class UserService {
         userData.birthDate = new Date(dto.birthDate);
       if (dto.fftLicenseNumber !== undefined)
         userData.fftLicenseNumber = dto.fftLicenseNumber;
+      if (dto.currentRanking !== undefined)
+        userData.currentRanking = dto.currentRanking;
       if (dto.formula !== undefined) userData.formula = dto.formula;
 
       const user = await this.prisma.user.create({
@@ -72,6 +74,7 @@ export class UserService {
           phone: true,
           birthDate: true,
           fftLicenseNumber: true,
+          currentRanking: true,
           avatarData: true,
           avatarMime: true,
           backgroundData: true,
@@ -106,6 +109,7 @@ export class UserService {
           phone: true,
           birthDate: true,
           fftLicenseNumber: true,
+          currentRanking: true,
           formula: true,
           privacyConsentAt: true,
           photoConsentAt: true,
@@ -189,6 +193,7 @@ export class UserService {
           phone: true,
           birthDate: true,
           fftLicenseNumber: true,
+          currentRanking: true,
           formula: true,
           privacyConsentAt: true,
           photoConsentAt: true,
@@ -222,6 +227,8 @@ export class UserService {
         updateData.birthDate = new Date(dto.birthDate);
       if (dto.fftLicenseNumber !== undefined)
         updateData.fftLicenseNumber = dto.fftLicenseNumber;
+      if (dto.currentRanking !== undefined)
+        updateData.currentRanking = dto.currentRanking;
       if (dto.formula !== undefined) updateData.formula = dto.formula;
       if (dto.privacyConsentAt !== undefined)
         updateData.privacyConsentAt = new Date(dto.privacyConsentAt);
@@ -247,6 +254,7 @@ export class UserService {
           phone: true,
           birthDate: true,
           fftLicenseNumber: true,
+          currentRanking: true,
           formula: true,
           privacyConsentAt: true,
           photoConsentAt: true,
