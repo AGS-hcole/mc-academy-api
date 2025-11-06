@@ -8,6 +8,12 @@ import { DateTime } from 'luxon';
 
 const tz = 'Europe/Paris';
 
+function atLocal(date: Date, h: number, m: number): Date {
+  const d = new Date(date);
+  d.setHours(h, m, 0, 0);
+  return d;
+}
+
 @Injectable()
 export class SessionsCron {
   private readonly logger = new Logger(SessionsCron.name);
@@ -18,35 +24,54 @@ export class SessionsCron {
   ) {}
 
   /**
-   * Génération auto des sessions le vendredi 00:00 (heure Paris)
+   * Génération auto des sessions le vendredi 16:00 (heure Paris)
    */
-  @Cron('0 0 * * 5', { timeZone: tz }) // At 00:00 on Friday
+  @Cron('0 16 * * 5', { timeZone: tz }) // At 16:00 on Friday
   async generateSessions() {
     this.logger.log('⏰ Génération auto des sessions');
 
-    // Récupère tous les sites actifs
-    const sites = await this.prisma.site.findMany({
-      where: { isActive: true },
-    });
-    if (!sites.length) {
-      this.logger.warn('Aucun site actif, skip');
+    // Sites défauts
+    const [morningSite, afternoonSite] = await Promise.all([
+      this.prisma.site.findFirst({
+        where: { isActive: true, isMorningDefault: true },
+      }),
+      this.prisma.site.findFirst({
+        where: { isActive: true, isAfternoonDefault: true },
+      }),
+    ]);
+
+    if (!morningSite && !afternoonSite) {
+      this.logger.warn('Aucun site par défaut (matin/après-midi), skip');
       return;
     }
+    if (!morningSite) this.logger.warn('Aucun site avec isMorningDefault=true');
+    if (!afternoonSite)
+      this.logger.warn('Aucun site avec isAfternoonDefault=true');
 
-    // Génère la semaine suivante (lundi -> dimanche)
+    // Semaine suivante (lundi -> dimanche)
     const today = startOfDay(new Date());
-    const startNextWeek = addDays(today, 3); // lundi prochain si vendredi = today
-    for (let i = 0; i < 7; i++) {
-      const localDay = addDays(startNextWeek, i);
-      //const dateAtUTC = ftz.zonedTimeToUtc(localDay, tz);
-      const dateAtUTC = localDay;
+    const startNextWeek = addDays(today, 3); // si on lance vendredi, +3 = lundi prochain
 
-      // Vérifie vacances scolaires
+    // Définition des fenêtres (heures en local Europe/Paris)
+    const MORNING_WINDOWS: Array<[number, number, number, number]> = [
+      [9, 0, 10, 30],
+      [10, 30, 12, 0],
+    ];
+    const AFTERNOON_WINDOWS: Array<[number, number, number, number]> = [
+      [15, 0, 16, 30],
+      [16, 30, 18, 0],
+    ];
+
+    for (let i = 0; i < 7; i++) {
+      const localDay = addDays(startNextWeek, i); // date “calendaire” (jour)
+      const dateOnlyUtc = startOfDay(localDay);
+
+      // Vacances scolaires ?
       const holiday = await this.prisma.holidayPeriod.findFirst({
         where: {
           isActive: true,
-          startDate: { lte: dateAtUTC },
-          endDate: { gte: dateAtUTC },
+          startDate: { lte: dateOnlyUtc },
+          endDate: { gte: dateOnlyUtc },
         },
       });
       if (holiday) {
@@ -56,53 +81,75 @@ export class SessionsCron {
         continue;
       }
 
-      for (const slot of ['AM', 'PM'] as const) {
-        for (const site of sites) {
-          // Set default times based on slot
-          const sessionDate = new Date(dateAtUTC);
-          const startTime = new Date(sessionDate);
-          const endTime = new Date(sessionDate);
-
-          if (slot === 'AM') {
-            startTime.setHours(9, 0, 0, 0); // 9:00 AM
-            endTime.setHours(12, 0, 0, 0); // 12:00 PM
-          } else {
-            startTime.setHours(14, 0, 0, 0); // 2:00 PM
-            endTime.setHours(17, 0, 0, 0); // 5:00 PM
-          }
+      // Génère les 4 sessions
+      // Matin (site isMorningDefault)
+      if (morningSite) {
+        for (const [sh, sm, eh, em] of MORNING_WINDOWS) {
+          const startUTC = atLocal(localDay, sh, sm);
+          const endUTC = atLocal(localDay, eh, em);
 
           await this.prisma.session.upsert({
             where: {
-              siteId_date_slot: { siteId: site.id, date: dateAtUTC, slot },
+              // ⚠️ nécessite un unique composite (siteId, date, startTime, endTime)
+              siteId_date_startTime_endTime: {
+                siteId: morningSite.id,
+                date: dateOnlyUtc,
+                startTime: startUTC,
+                endTime: endUTC,
+              },
             },
             update: {
-              // Update times for existing sessions if they don't have them
-              startTime: {
-                set: startTime,
-              },
-              endTime: {
-                set: endTime,
-              },
+              // au besoin, on peut mettre à jour d’autres champs
             },
             create: {
-              siteId: site.id,
-              date: dateAtUTC,
-              slot,
-              startTime,
-              endTime,
+              siteId: morningSite.id,
+              date: dateOnlyUtc,
+              slot: 'AM', // si tu gardes l’enum SessionSlot (AM/PM)
+              startTime: startUTC,
+              endTime: endUTC,
+            },
+          });
+        }
+      }
+
+      // Après-midi (site isAfternoonDefault)
+      if (afternoonSite) {
+        for (const [sh, sm, eh, em] of AFTERNOON_WINDOWS) {
+          const startUTC = atLocal(localDay, sh, sm);
+          const endUTC = atLocal(localDay, eh, em);
+
+          await this.prisma.session.upsert({
+            where: {
+              // ⚠️ nécessite un unique composite (siteId, date, startTime, endTime)
+              siteId_date_startTime_endTime: {
+                siteId: afternoonSite.id,
+                date: dateOnlyUtc,
+                startTime: startUTC,
+                endTime: endUTC,
+              },
+            },
+            update: {},
+            create: {
+              siteId: afternoonSite.id,
+              date: dateOnlyUtc,
+              slot: 'PM',
+              startTime: startUTC,
+              endTime: endUTC,
             },
           });
         }
       }
     }
 
-    this.logger.log('✅ Sessions générées');
+    this.logger.log(
+      '✅ Sessions générées (matin/AM & après-midi/PM, 4 par jour)',
+    );
   }
 
   /**
-   * Publication des sessions le samedi 20:00 (heure Paris)
+   * Publication des sessions le vendredi 18:00 (heure Paris)
    */
-  @Cron('0 20 * * 6', { timeZone: 'Europe/Paris' }) // samedi 20:00
+  @Cron('0 18 * * 5', { timeZone: 'Europe/Paris' }) // vendredi 18:00
   async publishSessions() {
     this.logger.log('⏰ Publication des sessions');
 

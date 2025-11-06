@@ -63,6 +63,8 @@ export class SitesService {
           address: dto.address,
           city: dto.city,
           isActive: dto.isActive ?? true,
+          isMorningDefault: dto.isMorningDefault ?? false,
+          isAfternoonDefault: dto.isAfternoonDefault ?? false,
         },
         include: {
           _count: {

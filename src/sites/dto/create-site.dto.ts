@@ -20,4 +20,20 @@ export class CreateSiteDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Défini le site par défaut pour les sessions du matin',
+    default: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  isMorningDefault?: boolean;
+
+  @ApiPropertyOptional({
+    description: "Défini le site par défaut pour les sessions de l\'après-midi",
+    default: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  isAfternoonDefault?: boolean;
 }
