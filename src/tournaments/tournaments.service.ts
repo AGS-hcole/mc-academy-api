@@ -517,7 +517,7 @@ export class TournamentsService {
       dto.orderIndex !== undefined
         ? dto.orderIndex
         : tournament.teams.length > 0
-          ? Math.max(...tournament.teams.map(t => t.orderIndex)) + 1
+          ? tournament.teams.reduce((max, team) => Math.max(max, team.orderIndex), 0) + 1
           : 0;
 
     const team = await this.prisma.tournamentTeam.create({
