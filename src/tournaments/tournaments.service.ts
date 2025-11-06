@@ -16,6 +16,7 @@ import {
   ReplaceParticipantsDto,
   ReorderTeamsDto,
   UpdatePlacementDto,
+  CreateTeamDto,
 } from './dto';
 import { startOfDay } from 'date-fns';
 
@@ -499,6 +500,71 @@ export class TournamentsService {
       where: { id: teamId },
       data: { placement: dto.placement },
     });
+  }
+
+  async createTeam(tournamentId: string, dto: CreateTeamDto) {
+    const tournament = await this.prisma.tournament.findUnique({
+      where: { id: tournamentId },
+      include: { teams: true },
+    });
+
+    if (!tournament) {
+      throw new NotFoundException('Tournament not found');
+    }
+
+    // Determine the next orderIndex if not provided
+    const orderIndex =
+      dto.orderIndex !== undefined
+        ? dto.orderIndex
+        : tournament.teams.length > 0
+          ? Math.max(...tournament.teams.map(t => t.orderIndex)) + 1
+          : 0;
+
+    const team = await this.prisma.tournamentTeam.create({
+      data: {
+        tournamentId,
+        orderIndex,
+        locked: dto.locked ?? false,
+        notes: dto.notes,
+      },
+      include: {
+        members: {
+          include: {
+            participant: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    firstname: true,
+                    lastname: true,
+                    email: true,
+                    currentRanking: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return team;
+  }
+
+  async deleteTeam(tournamentId: string, teamId: string) {
+    const team = await this.prisma.tournamentTeam.findUnique({
+      where: { id: teamId },
+    });
+
+    if (!team || team.tournamentId !== tournamentId) {
+      throw new NotFoundException('Team not found');
+    }
+
+    await this.prisma.tournamentTeam.delete({
+      where: { id: teamId },
+    });
+
+    return { message: 'Team deleted successfully' };
   }
 
   async rsvp(

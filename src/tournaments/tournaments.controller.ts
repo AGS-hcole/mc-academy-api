@@ -23,6 +23,7 @@ import {
   ReplaceParticipantsDto,
   ReorderTeamsDto,
   UpdatePlacementDto,
+  CreateTeamDto,
 } from './dto';
 import { AdminGuard } from '../auth/guards/admin.guard';
 import { TournamentStatus, TournamentType } from '@prisma/client';
@@ -218,5 +219,33 @@ export class TournamentsController {
       teamId,
       updatePlacementDto,
     );
+  }
+
+  @Post(':id/teams')
+  @ApiOperation({
+    summary: 'Create an empty team (Admin only)',
+    description: 'Create a new team without participants',
+  })
+  @ApiResponse({ status: 201, description: 'Team created successfully' })
+  @ApiResponse({ status: 404, description: 'Tournament not found' })
+  async createTeam(
+    @Param('id') tournamentId: string,
+    @Body() createTeamDto: CreateTeamDto,
+  ) {
+    return this.tournamentsService.createTeam(tournamentId, createTeamDto);
+  }
+
+  @Delete(':id/teams/:teamId')
+  @ApiOperation({
+    summary: 'Delete a team (Admin only)',
+    description: 'Delete a team from the tournament',
+  })
+  @ApiResponse({ status: 200, description: 'Team deleted successfully' })
+  @ApiResponse({ status: 404, description: 'Team not found' })
+  async deleteTeam(
+    @Param('id') tournamentId: string,
+    @Param('teamId') teamId: string,
+  ) {
+    return this.tournamentsService.deleteTeam(tournamentId, teamId);
   }
 }

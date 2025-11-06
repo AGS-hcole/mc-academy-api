@@ -347,5 +347,115 @@ describe('Tournaments (e2e)', () => {
 
       expect(response.status).toBe(403);
     });
+
+    it('should allow admin to create an empty team', async () => {
+      const response = await request(app.getHttpServer())
+        .post(`/v1/tournaments/${tournamentId}/teams`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          notes: 'Custom team',
+          locked: false,
+        })
+        .expect(201);
+
+      expect(response.body).toHaveProperty('id');
+      expect(response.body.notes).toBe('Custom team');
+      expect(response.body.locked).toBe(false);
+      expect(response.body.members).toEqual([]);
+      expect(response.body.orderIndex).toBeGreaterThanOrEqual(0);
+    });
+
+    it('should allow admin to create an empty team with custom orderIndex', async () => {
+      const response = await request(app.getHttpServer())
+        .post(`/v1/tournaments/${tournamentId}/teams`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          orderIndex: 10,
+          notes: 'Team with custom order',
+        })
+        .expect(201);
+
+      expect(response.body).toHaveProperty('id');
+      expect(response.body.orderIndex).toBe(10);
+      expect(response.body.notes).toBe('Team with custom order');
+      expect(response.body.members).toEqual([]);
+    });
+
+    it('should not allow user to create an empty team', async () => {
+      await request(app.getHttpServer())
+        .post(`/v1/tournaments/${tournamentId}/teams`)
+        .set('Authorization', `Bearer ${userToken}`)
+        .send({
+          notes: 'User team',
+        })
+        .expect(403);
+    });
+
+    it('should allow admin to delete a team', async () => {
+      // First create a team
+      const createResponse = await request(app.getHttpServer())
+        .post(`/v1/tournaments/${tournamentId}/teams`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          notes: 'Team to delete',
+        })
+        .expect(201);
+
+      const teamId = createResponse.body.id;
+
+      // Delete the team
+      const deleteResponse = await request(app.getHttpServer())
+        .delete(`/v1/tournaments/${tournamentId}/teams/${teamId}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200);
+
+      expect(deleteResponse.body.message).toBe('Team deleted successfully');
+
+      // Verify team is deleted
+      const tournament = await prisma.tournamentTeam.findUnique({
+        where: { id: teamId },
+      });
+      expect(tournament).toBeNull();
+    });
+
+    it('should not allow user to delete a team', async () => {
+      // First create a team as admin
+      const createResponse = await request(app.getHttpServer())
+        .post(`/v1/tournaments/${tournamentId}/teams`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          notes: 'Team to keep',
+        })
+        .expect(201);
+
+      const teamId = createResponse.body.id;
+
+      // Try to delete as regular user
+      await request(app.getHttpServer())
+        .delete(`/v1/tournaments/${tournamentId}/teams/${teamId}`)
+        .set('Authorization', `Bearer ${userToken}`)
+        .expect(403);
+    });
+
+    it('should return 404 when deleting non-existent team', async () => {
+      const fakeTeamId = '00000000-0000-0000-0000-000000000000';
+
+      await request(app.getHttpServer())
+        .delete(`/v1/tournaments/${tournamentId}/teams/${fakeTeamId}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(404);
+    });
+
+    it('should return 404 when creating team for non-existent tournament', async () => {
+      const fakeTournamentId = '00000000-0000-0000-0000-000000000000';
+
+      await request(app.getHttpServer())
+        .post(`/v1/tournaments/${fakeTournamentId}/teams`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          notes: 'Team',
+        })
+        .expect(404);
+    });
   });
 });

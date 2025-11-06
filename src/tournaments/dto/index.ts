@@ -12,3 +12,4 @@ export { ReorderTeamsRequestDto } from './reorder-teams-request.dto';
 export { SetTeamLockDto } from './set-team-lock.dto';
 export { AddMemberDto } from './add-member.dto';
 export { TeamsResponseDto } from './teams-response.dto';
+export { CreateTeamDto } from './create-team.dto';
