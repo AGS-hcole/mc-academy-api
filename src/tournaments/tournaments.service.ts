@@ -214,11 +214,11 @@ export class TournamentsService {
       throw new NotFoundException('Tournament not found');
     }
 
-    if (tournament.status !== TournamentStatus.DRAFT) {
-      throw new BadRequestException(
-        'Can only delete tournaments in DRAFT status',
-      );
-    }
+    // if (tournament.status !== TournamentStatus.DRAFT) {
+    //   throw new BadRequestException(
+    //     'Can only delete tournaments in DRAFT status',
+    //   );
+    // }
 
     await this.prisma.tournament.delete({
       where: { id },
@@ -517,7 +517,10 @@ export class TournamentsService {
       dto.orderIndex !== undefined
         ? dto.orderIndex
         : tournament.teams.length > 0
-          ? tournament.teams.reduce((max, team) => Math.max(max, team.orderIndex), 0) + 1
+          ? tournament.teams.reduce(
+              (max, team) => Math.max(max, team.orderIndex),
+              0,
+            ) + 1
           : 0;
 
     const team = await this.prisma.tournamentTeam.create({
