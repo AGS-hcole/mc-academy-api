@@ -149,7 +149,7 @@ export class SessionsCron {
   /**
    * Publication des sessions le vendredi 18:00 (heure Paris)
    */
-  @Cron('0 18 * * 5', { timeZone: 'Europe/Paris' }) // vendredi 18:00
+  @Cron('0 18 * * 5', { timeZone: tz }) // vendredi 18:00
   async publishSessions() {
     this.logger.log('⏰ Publication des sessions');
 
@@ -167,10 +167,10 @@ export class SessionsCron {
   }
 
   /** Exemple rappel J-1 à 18:00 */
-  @Cron('0 18 * * *', { timeZone: 'Europe/Paris' }) // tous les jours 18:00
+  @Cron('0 18 * * *', { timeZone: tz }) // tous les jours 18:00
   async dayBeforeReminders() {
     const tomorrowLocal = DateTime.now()
-      .setZone('Europe/Paris')
+      .setZone(tz)
       .plus({ days: 1 })
       .startOf('day')
       .toJSDate();
