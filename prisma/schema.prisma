@@ -159,7 +159,6 @@ model Session {
 
   // 1 session per site/day/slot
   @@unique([siteId, date, startTime, endTime])
-  @@unique([siteId, date, slot])
   @@index([date, slot])
   @@index([siteId, date])
   @@index([startTime])

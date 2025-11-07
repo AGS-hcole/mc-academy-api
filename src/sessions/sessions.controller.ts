@@ -165,7 +165,7 @@ export class SessionsController {
 
   // ---------- Cron job triggers ----------
 
-  @Post('admin/trigger-generate')
+  @Post('trigger-generate')
   @UseGuards(AuthGuard)
   @ApiOperation({
     summary: 'Trigger manual: generate next week sessions (admin)',
@@ -180,7 +180,7 @@ export class SessionsController {
     return { ok: true, action: 'generateSessions' };
   }
 
-  @Post('admin/trigger-publish')
+  @Post('trigger-publish')
   @UseGuards(AuthGuard)
   @ApiOperation({ summary: 'Trigger manual: publish sessions (admin)' })
   @ApiResponse({ status: 200, description: 'Publish launched' })
@@ -193,7 +193,7 @@ export class SessionsController {
     return { ok: true, action: 'publishSessions' };
   }
 
-  @Post('admin/trigger-reminders')
+  @Post('trigger-reminders')
   @UseGuards(AuthGuard)
   @ApiOperation({ summary: 'Trigger manual: day-before reminders (admin)' })
   @ApiResponse({ status: 200, description: 'Reminders launched' })

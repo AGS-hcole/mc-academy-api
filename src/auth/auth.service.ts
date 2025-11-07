@@ -154,6 +154,8 @@ export class AuthService {
     // Remove the password from the user class so we do not return in response
     delete user.password;
     delete user.refreshToken;
+    delete user.avatarData;
+    delete user.backgroundData;
 
     // Return the auth response
     return {
