@@ -22,8 +22,11 @@ export class SessionsService {
       where: { date: { gte: now } },
       orderBy: [{ date: 'asc' }, { slot: 'asc' }],
       include: {
-        site: true,
-        attendances: { include: { user: true } },
+        site: { select: { id: true, name: true } },
+        attendances: {
+          where: { status: 'YES' },
+          select: { status: true, userId: true },
+        },
       },
     });
   }
@@ -55,8 +58,11 @@ export class SessionsService {
       where,
       orderBy: [{ date: 'asc' }, { slot: 'asc' }],
       include: {
-        site: true,
-        attendances: { include: { user: true } },
+        site: { select: { id: true, name: true } },
+        attendances: {
+          where: { status: 'YES' },
+          select: { status: true, userId: true },
+        },
       },
     });
   }
