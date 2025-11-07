@@ -6,6 +6,7 @@ import { SessionsCron } from './sessions.cron';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { NotificationsService } from 'src/notifications/notifications.service';
 import { AuthModule } from 'src/auth/auth.module';
+import { EmailService } from 'src/common/email.service';
 
 @Module({
   controllers: [SessionsController],
@@ -15,6 +16,7 @@ import { AuthModule } from 'src/auth/auth.module';
     SessionsCron,
     PrismaService,
     NotificationsService,
+    EmailService,
   ],
 })
 export class SessionsModule {}

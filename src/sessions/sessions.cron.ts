@@ -24,9 +24,9 @@ export class SessionsCron {
   ) {}
 
   /**
-   * Génération auto des sessions le vendredi 16:00 (heure Paris)
+   * Génération auto des sessions le vendredi 17:00 (heure Paris)
    */
-  @Cron('0 16 * * 5', { timeZone: tz }) // At 16:00 on Friday
+  @Cron('30 17 * * 5', { timeZone: tz }) // At 17:00 on Friday
   async generateSessions() {
     this.logger.log('⏰ Génération auto des sessions');
 
