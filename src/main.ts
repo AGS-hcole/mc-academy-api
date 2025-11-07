@@ -9,6 +9,7 @@ import { main as seedDatabase } from '../prisma/seed/seed';
 
 export async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const logger = new Logger('Bootstrap');
 
   app.setGlobalPrefix('api');
 
@@ -36,8 +37,12 @@ export async function bootstrap() {
     .build();
   const document = SwaggerModule.createDocument(app, config);
 
-  if (process.env.ENABLE_SWAGGER === 'true')
+  if (process.env.ENABLE_SWAGGER === 'true') {
     SwaggerModule.setup('swagger', app, document, swaggerOptions);
+    logger.log('✅ Swagger UI is enabled at /swagger');
+  } else {
+    logger.warn('⚠️ Swagger UI is disabled (ENABLE_SWAGGER != true)');
+  }
   // End Swagger Configurations --------------------------------
 
   //Enable CORS
