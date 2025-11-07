@@ -62,7 +62,7 @@ export class SessionsCron {
       [16, 30, 18, 0],
     ];
 
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < 5; i++) {
       const localDay = addDays(startNextWeek, i); // date “calendaire” (jour)
       const dateOnlyUtc = startOfDay(localDay);
 

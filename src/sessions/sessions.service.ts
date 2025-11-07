@@ -282,15 +282,19 @@ export class SessionsService {
   }
 
   private _computeCutoff(sessionDate: Date): Date {
-    // cutoff is always Friday 18h of the week of the session
-    // (simplify: take Friday before the session date)
+    // Cutoff = samedi précédent à 20:00 (heure locale du process)
     const day = new Date(sessionDate);
-    day.setUTCHours(0, 0, 0, 0);
-    // ISO: Monday=1..Sunday=7, Friday=5
-    const dayOfWeek = ((day.getUTCDay() + 6) % 7) + 1;
-    const diff = dayOfWeek >= 5 ? dayOfWeek - 5 : 7 + dayOfWeek - 5;
-    day.setDate(day.getDate() - diff);
-    day.setHours(18, 0, 0, 0);
+    day.setHours(0, 0, 0, 0); // normalise en local
+
+    // 0=dim ... 6=sam
+    const jsDay = day.getDay();
+    // nb de jours écoulés depuis le dernier samedi (samedi -> 0)
+    let daysBack = (jsDay + 1) % 7;
+    if (daysBack === 0) daysBack = 7; // si session un samedi -> samedi précédent
+
+    day.setDate(day.getDate() - daysBack);
+    day.setHours(20, 0, 0, 0); // 20:00
+
     return day;
   }
 }
