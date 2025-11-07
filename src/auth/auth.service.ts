@@ -78,7 +78,7 @@ export class AuthService {
   async signIn(email: string, password: string): Promise<any> {
     try {
       const user = await this.prisma.user.findUniqueOrThrow({
-        where: { email },
+        where: { email: email.trim().toLowerCase() },
       });
 
       const passwordMatch = await bcrypt.compare(password, user.password);
@@ -269,7 +269,7 @@ export class AuthService {
     await this.emailService.sendTemplateEmail(
       user.email,
       '',
-      '[YellowScan/Software Portal] Réinitialisation du mot de passe',
+      '[MC Academy] Réinitialisation du mot de passe',
       'reset-password',
       replacements,
     );

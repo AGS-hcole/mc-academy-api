@@ -44,9 +44,9 @@ export class UserService {
 
       // Build the data object dynamically
       const userData: any = {
-        firstname: dto.firstname,
-        lastname: dto.lastname,
-        email: dto.email,
+        firstname: dto.firstname.trim(),
+        lastname: dto.lastname.trim(),
+        email: dto.email.trim().toLowerCase(),
         role: dto.role,
         password: hashedPassword,
         resetPasswordToken: resetToken,
@@ -54,11 +54,11 @@ export class UserService {
       };
 
       // Add optional fields if provided
-      if (dto.phone !== undefined) userData.phone = dto.phone;
+      if (dto.phone !== undefined) userData.phone = dto.phone.trim();
       if (dto.birthDate !== undefined)
-        userData.birthDate = new Date(dto.birthDate);
+        userData.birthDate = new Date(dto.birthDate.trim());
       if (dto.fftLicenseNumber !== undefined)
-        userData.fftLicenseNumber = dto.fftLicenseNumber;
+        userData.fftLicenseNumber = dto.fftLicenseNumber.trim();
       if (dto.currentRanking !== undefined)
         userData.currentRanking = dto.currentRanking;
       if (dto.formula !== undefined) userData.formula = dto.formula;
@@ -217,16 +217,17 @@ export class UserService {
       // Build the update data object dynamically, only including provided fields
       const updateData: any = {};
 
-      if (dto.firstname !== undefined) updateData.firstname = dto.firstname;
-      if (dto.lastname !== undefined) updateData.lastname = dto.lastname;
+      if (dto.firstname !== undefined)
+        updateData.firstname = dto.firstname.trim();
+      if (dto.lastname !== undefined) updateData.lastname = dto.lastname.trim();
       if (dto.email !== undefined)
         updateData.email = dto.email.toLowerCase().trim();
       if (dto.role !== undefined) updateData.role = dto.role;
-      if (dto.phone !== undefined) updateData.phone = dto.phone;
+      if (dto.phone !== undefined) updateData.phone = dto.phone.trim();
       if (dto.birthDate !== undefined)
-        updateData.birthDate = new Date(dto.birthDate);
+        updateData.birthDate = new Date(dto.birthDate.trim());
       if (dto.fftLicenseNumber !== undefined)
-        updateData.fftLicenseNumber = dto.fftLicenseNumber;
+        updateData.fftLicenseNumber = dto.fftLicenseNumber.trim();
       if (dto.currentRanking !== undefined)
         updateData.currentRanking = dto.currentRanking;
       if (dto.formula !== undefined) updateData.formula = dto.formula;
