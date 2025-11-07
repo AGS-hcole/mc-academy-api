@@ -1,31 +1,22 @@
 // src/notifications/notifications.service.ts
 import { Injectable, Logger } from '@nestjs/common';
-import * as Brevo from '@getbrevo/brevo';
 import { Session, SessionSlot, User } from '@prisma/client';
 import { DateTime } from 'luxon';
 import twilio, { Twilio } from 'twilio';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { EmailService } from 'src/common/email.service';
 
 const TZ = 'Europe/Paris';
-
-// Extend TransactionalEmailsApi to access protected authentications
-class BrevoEmailApi extends Brevo.TransactionalEmailsApi {
-  configureApiKey(apiKey: string) {
-    this.authentications.apiKey.apiKey = apiKey;
-  }
-}
 
 @Injectable()
 export class NotificationsService {
   private readonly logger = new Logger(NotificationsService.name);
-  private apiInstance: BrevoEmailApi;
   private twilio?: Twilio;
 
-  constructor(private prisma: PrismaService) {
-    // Initialize Brevo API for email
-    this.apiInstance = new BrevoEmailApi();
-    this.apiInstance.configureApiKey(process.env.BREVO_API_KEY || '');
-
+  constructor(
+    private prisma: PrismaService,
+    private emailService: EmailService,
+  ) {
     // Twilio (optional)
     if (process.env.TWILIO_SID && process.env.TWILIO_TOKEN) {
       this.twilio = twilio(process.env.TWILIO_SID, process.env.TWILIO_TOKEN);
@@ -129,20 +120,37 @@ export class NotificationsService {
     sessions: (Session & { site: { name: string } })[],
   ) {
     const subject = 'Nouveaux créneaux disponibles';
-    const lines = sessions
+
+    // Format sessions for email template
+    const sessionsHtml = sessions
       .map(s => `• ${this.formatSessionLine(s)}`)
       .join('<br/>');
-    const html = `
-      <p>Bonjour ${user.firstname},</p>
-      <p>Les nouveaux créneaux de la semaine sont ouverts&nbsp;:</p>
-      <p>${lines}</p>
-      <p>Réponds avant vendredi 18h depuis ton espace.</p>
-      <p>— My Center Academy</p>
-    `;
-    const text = this.stripHtml(html);
 
-    if (user.notifyEmail && user.email)
-      await this.sendEmail(user.email, subject, html, text);
+    // Email using template
+    if (user.notifyEmail && user.email) {
+      const replacements = {
+        firstname: user.firstname,
+        sessions: sessionsHtml,
+        year: new Date().getFullYear().toString(),
+        title: subject,
+        preheader: 'Les nouveaux créneaux de la semaine sont disponibles',
+      };
+
+      try {
+        await this.emailService.sendTemplateEmail(
+          user.email,
+          '',
+          subject,
+          'sessions-published',
+          replacements,
+        );
+        this.logger.log(`Email sent to ${user.email}: ${subject}`);
+      } catch (e) {
+        this.logger.error(`Email failed to ${user.email}: ${e?.message ?? e}`);
+      }
+    }
+
+    // SMS and WhatsApp remain unchanged
     const smsWaText = `Nouveaux créneaux dispo:\n${sessions.map(s => `- ${this.formatSessionLine(s, true)}`).join('\n')}\nRépondre avant ven 18h.`;
     if (user.notifySMS && user.phone) await this.sendSMS(user.phone, smsWaText);
     if (user.notifyWhatsApp && user.phone)
@@ -163,17 +171,33 @@ export class NotificationsService {
     session: Session & { site: { name: string } },
   ) {
     const subject = 'Rappel de séance';
-    const line = this.formatSessionLine(session);
-    const html = `
-      <p>Bonjour ${user.firstname},</p>
-      <p>Rappel: tu es inscrit(e) à&nbsp;: ${line}</p>
-      <p>À tout à l'heure !</p>
-      <p>— My Center Academy</p>
-    `;
-    const text = this.stripHtml(html);
+    const sessionLine = this.formatSessionLine(session);
 
-    if (user.notifyEmail && user.email)
-      await this.sendEmail(user.email, subject, html, text);
+    // Email using template
+    if (user.notifyEmail && user.email) {
+      const replacements = {
+        firstname: user.firstname,
+        session: sessionLine,
+        year: new Date().getFullYear().toString(),
+        title: subject,
+        preheader: "N'oublie pas ta séance aujourd'hui",
+      };
+
+      try {
+        await this.emailService.sendTemplateEmail(
+          user.email,
+          '',
+          subject,
+          'day-reminder',
+          replacements,
+        );
+        this.logger.log(`Email sent to ${user.email}: ${subject}`);
+      } catch (e) {
+        this.logger.error(`Email failed to ${user.email}: ${e?.message ?? e}`);
+      }
+    }
+
+    // SMS and WhatsApp remain unchanged
     const smsWaText = `Rappel séance: ${this.formatSessionLine(session, true)}.`;
     if (user.notifySMS && user.phone) await this.sendSMS(user.phone, smsWaText);
     if (user.notifyWhatsApp && user.phone)
@@ -181,38 +205,6 @@ export class NotificationsService {
   }
 
   // ---------- Low-level senders ----------
-
-  private async sendEmail(
-    to: string,
-    subject: string,
-    html: string,
-    text: string,
-  ) {
-    try {
-      // Prepare sender
-      const sender = {
-        email: process.env.BREVO_SENDER_EMAIL || '',
-        name: process.env.BREVO_SENDER_NAME || 'My Center Academy',
-      };
-
-      // Prepare recipient
-      const toRecipients = [{ email: to }];
-
-      // Create email object
-      const sendSmtpEmail = new Brevo.SendSmtpEmail();
-      sendSmtpEmail.sender = sender;
-      sendSmtpEmail.to = toRecipients;
-      sendSmtpEmail.subject = subject;
-      sendSmtpEmail.htmlContent = html;
-      sendSmtpEmail.textContent = text;
-
-      // Send the email
-      await this.apiInstance.sendTransacEmail(sendSmtpEmail);
-      this.logger.log(`Email sent to ${to}: ${subject}`);
-    } catch (e) {
-      this.logger.error(`Email failed to ${to}: ${e?.message ?? e}`);
-    }
-  }
 
   private async sendSMS(to: string, body: string) {
     if (!this.twilio || !process.env.TWILIO_SMS_FROM) return;
@@ -264,12 +256,5 @@ export class NotificationsService {
     return plain
       ? `${dateStr} • ${slotStr} • ${site}`
       : `${dateStr} • ${slotStr} • ${site}`;
-  }
-
-  private stripHtml(html: string) {
-    return html
-      .replace(/<[^>]+>/g, '')
-      .replace(/\s+/g, ' ')
-      .trim();
   }
 }
