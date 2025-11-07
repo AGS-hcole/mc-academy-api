@@ -12,23 +12,6 @@ export async function bootstrap() {
 
   app.setGlobalPrefix('api');
 
-  // Add a route to redirect /:software/:version/:arch to /api/:software/:version/:arch
-  app.getHttpAdapter().all('/:software/:version/:arch', (req, res, next) => {
-    // Check if the request starts with /api/
-    if (req.url.startsWith('/api/')) {
-      // Let the /api/ route handlers take over
-      return next();
-    }
-
-    // Otherwise, redirect to /api/:software/:version/:arch
-    const { software, version, arch } = req.params;
-    const targetUrl = `/api/${software}/${version}/${arch}`;
-
-    // Proxy the request to the new URL
-    req.url = targetUrl;
-    next();
-  });
-
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -50,16 +33,6 @@ export async function bootstrap() {
     )
     .setVersion('1.0')
     .addBearerAuth()
-    .addApiKey(
-      {
-        type: 'apiKey',
-        name: 'x-api-key',
-        in: 'header',
-        description: 'Proxy token (revocable)',
-      },
-      'api-key',
-    )
-    .addSecurityRequirements('api-key')
     .build();
   const document = SwaggerModule.createDocument(app, config);
 
