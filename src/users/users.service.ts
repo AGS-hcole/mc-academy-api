@@ -22,6 +22,8 @@ export class UsersService {
       if (dto.phone !== undefined) data.phone = dto.phone;
       if (dto.fftLicenseNumber !== undefined)
         data.fftLicenseNumber = dto.fftLicenseNumber;
+      if (dto.currentRanking !== undefined)
+        data.currentRanking = dto.currentRanking;
       if (dto.notifyEmail !== undefined) data.notifyEmail = dto.notifyEmail;
       if (dto.notifySMS !== undefined) data.notifySMS = dto.notifySMS;
       if (dto.notifyWhatsApp !== undefined)
@@ -47,6 +49,7 @@ export class UsersService {
           phone: true,
           birthDate: true,
           fftLicenseNumber: true,
+          currentRanking: true,
           formula: true,
           notifyEmail: true,
           notifySMS: true,

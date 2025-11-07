@@ -70,6 +70,15 @@ export class UpdateMeDto {
   fftLicenseNumber?: string;
 
   @ApiPropertyOptional({
+    description: 'Current ranking',
+    type: 'string',
+    example: '1000',
+  })
+  @IsOptional()
+  @IsString()
+  currentRanking?: string;
+
+  @ApiPropertyOptional({
     description: 'Email notifications enabled',
     type: 'boolean',
     example: true,
