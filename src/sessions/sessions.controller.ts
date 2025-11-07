@@ -19,6 +19,7 @@ import {
   ApiResponse,
   ApiQuery,
   ApiBody,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { SessionsService } from './sessions.service';
 import { SessionSlot } from '@prisma/client';
@@ -28,6 +29,7 @@ import { RsvpDto } from './dto/rsvp.dto';
 import { SessionsCron } from './sessions.cron';
 
 @ApiTags('sessions')
+@ApiBearerAuth()
 @Controller('sessions')
 export class SessionsController {
   constructor(

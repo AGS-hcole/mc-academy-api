@@ -26,7 +26,7 @@ export class SessionsCron {
   /**
    * Génération auto des sessions le vendredi 17:30 (heure Paris)
    */
-  @Cron('30 16 * * 5', { timeZone: tz }) // At 17:30 on Friday
+  @Cron('30 18 * * 5', { timeZone: tz }) // At 17:30 on Friday
   async generateSessions() {
     this.logger.log('⏰ Génération auto des sessions');
 
@@ -149,7 +149,7 @@ export class SessionsCron {
   /**
    * Publication des sessions le vendredi 18:00 (heure Paris)
    */
-  @Cron('0 17 * * 5', { timeZone: tz }) // vendredi 18:00
+  @Cron('0 19 * * 5', { timeZone: tz }) // vendredi 18:00
   async publishSessions() {
     this.logger.log('⏰ Publication des sessions');
 
@@ -167,7 +167,7 @@ export class SessionsCron {
   }
 
   /** Exemple rappel J-1 à 18:00 */
-  @Cron('0 18 * * *', { timeZone: tz }) // tous les jours 18:00
+  @Cron('0 19 * * *', { timeZone: tz }) // tous les jours 18:00
   async dayBeforeReminders() {
     const tomorrowLocal = DateTime.now()
       .setZone(tz)
