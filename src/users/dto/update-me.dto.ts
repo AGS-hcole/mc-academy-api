@@ -6,6 +6,7 @@ import {
   Length,
   Matches,
   IsISO8601,
+  IsNumber,
 } from 'class-validator';
 import { IsPastDate } from '../../common/validators/is-past-date.validator';
 
@@ -75,8 +76,8 @@ export class UpdateMeDto {
     example: '1000',
   })
   @IsOptional()
-  @IsString()
-  currentRanking?: string;
+  @IsNumber()
+  currentRanking?: number;
 
   @ApiPropertyOptional({
     description: 'Email notifications enabled',
