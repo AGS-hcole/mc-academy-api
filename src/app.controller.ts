@@ -15,6 +15,9 @@ export class AppController {
   @ApiOperation({ summary: 'Check if the API is online' })
   @ApiResponse({ status: 200, description: 'API is online' })
   getStatus(): any {
-    return { ok: true, message: 'Status : Online' };
+    return {
+      ok: true,
+      message: 'Status : Online, Swagger: ' + process.env.ENABLE_SWAGGER,
+    };
   }
 }
