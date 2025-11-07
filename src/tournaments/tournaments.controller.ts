@@ -27,6 +27,7 @@ import {
 } from './dto';
 import { AdminGuard } from '../auth/guards/admin.guard';
 import { TournamentStatus, TournamentType } from '@prisma/client';
+import { AuthGuard } from 'src/auth/guards/auth.guards';
 
 @ApiTags('tournaments')
 @ApiBearerAuth()
@@ -46,6 +47,14 @@ export class TournamentsController {
   })
   async create(@Body() createTournamentDto: CreateTournamentDto) {
     return this.tournamentsService.create(createTournamentDto);
+  }
+
+  @Get('upcoming')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Get upcoming tournaments' })
+  @ApiResponse({ status: 200, description: 'List of upcoming tournaments' })
+  async getUpcoming() {
+    return this.tournamentsService.getUpcomingTournaments();
   }
 
   @Get()

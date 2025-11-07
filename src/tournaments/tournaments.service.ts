@@ -42,6 +42,18 @@ export class TournamentsService {
     });
   }
 
+  async getUpcomingTournaments() {
+    const now = new Date();
+    return this.prisma.tournament.findMany({
+      where: { startsAt: { gte: now } },
+      orderBy: [{ startsAt: 'asc' }],
+      include: {
+        teams: { include: { members: { include: { participant: true } } } },
+        participants: { include: { user: true } },
+      },
+    });
+  }
+
   async findAll(filters?: {
     status?: TournamentStatus;
     type?: TournamentType;
