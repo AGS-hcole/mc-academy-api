@@ -11,6 +11,7 @@ import {
   Req,
   UseGuards,
   UnauthorizedException,
+  ForbiddenException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -24,11 +25,15 @@ import { SessionSlot } from '@prisma/client';
 import { CreateSessionDto, UpdateSessionDto, AdminRegisterDto } from './dto';
 import { AuthGuard } from 'src/auth/guards/auth.guards';
 import { RsvpDto } from './dto/rsvp.dto';
+import { SessionsCron } from './sessions.cron';
 
 @ApiTags('sessions')
 @Controller('sessions')
 export class SessionsController {
-  constructor(private readonly sessions: SessionsService) {}
+  constructor(
+    private readonly sessions: SessionsService,
+    private readonly cron: SessionsCron,
+  ) {}
 
   @Get('upcoming')
   @UseGuards(AuthGuard)
@@ -156,5 +161,48 @@ export class SessionsController {
     await this.sessions.adminRegister(sessionId, dto, adminUser);
 
     return this.sessions.getSessionById(sessionId);
+  }
+
+  // ---------- Cron job triggers ----------
+
+  @Post('admin/trigger-generate')
+  @UseGuards(AuthGuard)
+  @ApiOperation({
+    summary: 'Trigger manual: generate next week sessions (admin)',
+  })
+  @ApiResponse({ status: 200, description: 'Generation launched' })
+  async triggerGenerate(@Req() req: any) {
+    const user = req.user;
+    if (!user) throw new UnauthorizedException();
+    if (user.role !== 'admin') throw new ForbiddenException('Admins only');
+
+    await this.cron.generateSessions();
+    return { ok: true, action: 'generateSessions' };
+  }
+
+  @Post('admin/trigger-publish')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Trigger manual: publish sessions (admin)' })
+  @ApiResponse({ status: 200, description: 'Publish launched' })
+  async triggerPublish(@Req() req: any) {
+    const user = req.user;
+    if (!user) throw new UnauthorizedException();
+    if (user.role !== 'admin') throw new ForbiddenException('Admins only');
+
+    await this.cron.publishSessions();
+    return { ok: true, action: 'publishSessions' };
+  }
+
+  @Post('admin/trigger-reminders')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Trigger manual: day-before reminders (admin)' })
+  @ApiResponse({ status: 200, description: 'Reminders launched' })
+  async triggerReminders(@Req() req: any) {
+    const user = req.user;
+    if (!user) throw new UnauthorizedException();
+    if (user.role !== 'admin') throw new ForbiddenException('Admins only');
+
+    await this.cron.dayBeforeReminders();
+    return { ok: true, action: 'dayBeforeReminders' };
   }
 }

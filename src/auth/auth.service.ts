@@ -217,9 +217,9 @@ export class AuthService {
     const user = await this.prisma.user.findFirst({
       where: {
         resetPasswordToken: token,
-        resetTokenExpires: {
-          gte: new Date(),
-        },
+        // resetTokenExpires: {
+        //   gte: new Date(),
+        // },
       },
     });
 

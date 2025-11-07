@@ -40,7 +40,7 @@ export class UserService {
       // Generate a random UID as reset Token
       const resetToken = uuidv4();
       // Make the token expire within one hour
-      const expires = addHours(new Date(), 1);
+      const expires = addHours(new Date(), 24);
 
       // Build the data object dynamically
       const userData: any = {
