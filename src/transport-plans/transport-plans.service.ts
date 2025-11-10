@@ -123,7 +123,6 @@ export class TransportPlansService {
       });
 
       // Create new entries
-      const template = await this.prisma.transportTemplate.findFirst();
       for (const entry of dto.entries) {
         const entryTemplate = await this.templatesService.findOne(
           entry.templateId,
@@ -165,7 +164,7 @@ export class TransportPlansService {
     } else {
       // Create new plan with entries
       const entriesData = await Promise.all(
-        dto.entries.map(async (entry) => {
+        dto.entries.map(async entry => {
           const entryTemplate = await this.templatesService.findOne(
             entry.templateId,
           );
@@ -276,9 +275,7 @@ export class TransportPlansService {
    */
   async getAllPlansForWeek(weekStartDate: string, currentUser: User) {
     if (currentUser.role !== 'admin') {
-      throw new ForbiddenException(
-        'Only admins can view all transport plans',
-      );
+      throw new ForbiddenException('Only admins can view all transport plans');
     }
 
     const weekStart = this.timeService.localDateToUtcMidnight(weekStartDate);

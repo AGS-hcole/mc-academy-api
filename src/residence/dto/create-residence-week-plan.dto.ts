@@ -3,8 +3,7 @@ import { IsArray, IsDateString, IsOptional, IsString } from 'class-validator';
 
 export class CreateResidenceWeekPlanDto {
   @ApiPropertyOptional({
-    description:
-      'Student ID (admin only, if not provided uses current user)',
+    description: 'Student ID (admin only, if not provided uses current user)',
   })
   @IsOptional()
   @IsString()

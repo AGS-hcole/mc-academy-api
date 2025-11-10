@@ -10,11 +10,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { TransportRunsService } from './transport-runs.service';
-import {
-  GenerateRunsDto,
-  AssignStudentDto,
-  CheckinPresenceDto,
-} from './dto';
+import { GenerateRunsDto, AssignStudentDto, CheckinPresenceDto } from './dto';
 import { AdminGuard } from '../auth/guards/admin.guard';
 
 @ApiTags('Transport Runs')
@@ -59,10 +55,7 @@ export class TransportRunsController {
     description:
       'Admin only: Manually assign a student to a run or update assignment status.',
   })
-  async assignStudent(
-    @Param('id') id: string,
-    @Body() dto: AssignStudentDto,
-  ) {
+  async assignStudent(@Param('id') id: string, @Body() dto: AssignStudentDto) {
     return this.transportRunsService.assignStudent(id, dto);
   }
 

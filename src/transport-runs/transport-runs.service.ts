@@ -7,11 +7,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { TimeService } from '../time/time.service';
 import { TransportTemplatesService } from '../transport-templates/transport-templates.service';
-import {
-  GenerateRunsDto,
-  AssignStudentDto,
-  CheckinPresenceDto,
-} from './dto';
+import { GenerateRunsDto, AssignStudentDto, CheckinPresenceDto } from './dto';
 import { TransportAssignmentStatus } from '@prisma/client';
 
 @Injectable()
@@ -116,13 +112,12 @@ export class TransportRunsService {
         });
 
         // Assign students
-        const studentsToAssign = planEntries.map((entry) => ({
+        const studentsToAssign = planEntries.map(entry => ({
           studentId: entry.weekPlan.studentId,
-          student: entry.weekPlan.student,
         }));
 
         let assignedCount = 0;
-        for (const { studentId, student } of studentsToAssign) {
+        for (const { studentId } of studentsToAssign) {
           const status =
             assignedCount < template.capacity
               ? TransportAssignmentStatus.ASSIGNED
@@ -293,7 +288,7 @@ export class TransportRunsService {
    */
   async assignStudent(runId: string, dto: AssignStudentDto) {
     // Check if run exists
-    const run = await this.getRunById(runId);
+    await this.getRunById(runId);
 
     // Check if student exists
     const student = await this.prisma.user.findUnique({
@@ -301,9 +296,7 @@ export class TransportRunsService {
     });
 
     if (!student) {
-      throw new NotFoundException(
-        `Student with ID ${dto.studentId} not found`,
-      );
+      throw new NotFoundException(`Student with ID ${dto.studentId} not found`);
     }
 
     // Check if already assigned

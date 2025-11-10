@@ -37,21 +37,13 @@ export class TransportRunsCron {
         return;
       }
 
-      // Check if we're past the window close time
+      // This cron is set to run at the close time of the planning window
+      // Generate runs for the next week
       const now = new Date();
-      const isWithinWindow = this.timeService.isWithinPlanningWindow(
-        now,
-        settings,
-      );
-
-      // Only generate if the window has just closed (or we're past it)
-      // This cron is set to run at the close time, so we should generate
       const nextWeekStart = this.timeService.getNextIsoWeekStart(now);
       const weekStartDate = this.timeService.formatAsLocalDate(nextWeekStart);
 
-      this.logger.log(
-        `Generating runs for week starting ${weekStartDate}`,
-      );
+      this.logger.log(`Generating runs for week starting ${weekStartDate}`);
 
       const result = await this.transportRunsService.generateRunsForWeek({
         weekStart: weekStartDate,

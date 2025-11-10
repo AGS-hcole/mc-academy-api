@@ -35,8 +35,7 @@ export class TransportPlanEntryDto {
 
 export class CreateTransportWeekPlanDto {
   @ApiPropertyOptional({
-    description:
-      'Student ID (admin only, if not provided uses current user)',
+    description: 'Student ID (admin only, if not provided uses current user)',
   })
   @IsOptional()
   @IsString()

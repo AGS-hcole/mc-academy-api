@@ -213,28 +213,16 @@ export class TransportTemplatesService {
         },
         OR: [
           {
-            AND: [
-              { activeFrom: { lte: date } },
-              { activeTo: { gte: date } },
-            ],
+            AND: [{ activeFrom: { lte: date } }, { activeTo: { gte: date } }],
           },
           {
-            AND: [
-              { activeFrom: null },
-              { activeTo: null },
-            ],
+            AND: [{ activeFrom: null }, { activeTo: null }],
           },
           {
-            AND: [
-              { activeFrom: { lte: date } },
-              { activeTo: null },
-            ],
+            AND: [{ activeFrom: { lte: date } }, { activeTo: null }],
           },
           {
-            AND: [
-              { activeFrom: null },
-              { activeTo: { gte: date } },
-            ],
+            AND: [{ activeFrom: null }, { activeTo: { gte: date } }],
           },
         ],
       },

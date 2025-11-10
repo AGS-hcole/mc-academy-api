@@ -39,9 +39,7 @@ export class TimeService {
     const currentWeekday = dt.weekday; // 1=Monday, 7=Sunday
     const daysUntilNextMonday = currentWeekday === 7 ? 1 : 8 - currentWeekday;
 
-    const nextMonday = dt
-      .plus({ days: daysUntilNextMonday })
-      .startOf('day');
+    const nextMonday = dt.plus({ days: daysUntilNextMonday }).startOf('day');
 
     return nextMonday.toJSDate();
   }
@@ -89,19 +87,12 @@ export class TimeService {
   /**
    * Get the target week (next week) for the planning window
    * @param now Current date (optional, defaults to now)
-   * @param settings App settings for window configuration
    * @returns Week range with start and end dates
    */
-  getTargetWeekForWindow(
-    now: Date | undefined,
-    settings: AppSettingsForWindow,
-  ): WeekRange {
+  getTargetWeekForWindow(now: Date | undefined): WeekRange {
     const nextMonday = this.getNextIsoWeekStart(now);
     const nextMondayDt = DateTime.fromJSDate(nextMonday).setZone(PARIS_TZ);
-    const nextSunday = nextMondayDt
-      .plus({ days: 6 })
-      .endOf('day')
-      .toJSDate();
+    const nextSunday = nextMondayDt.plus({ days: 6 }).endOf('day').toJSDate();
 
     return {
       weekStart: nextMonday,

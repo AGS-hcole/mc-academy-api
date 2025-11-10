@@ -66,7 +66,7 @@ export class ResidenceService {
     }
 
     // Validate that all nights are within the target week
-    const nightDates = dto.nights.map((night) =>
+    const nightDates = dto.nights.map(night =>
       this.timeService.localDateToUtcMidnight(night),
     );
 
@@ -99,7 +99,7 @@ export class ResidenceService {
 
       // Create new nights
       await this.prisma.residenceNight.createMany({
-        data: nightDates.map((date) => ({
+        data: nightDates.map(date => ({
           weekPlanId: existingPlan.id,
           date,
         })),
@@ -127,7 +127,7 @@ export class ResidenceService {
           studentId: targetStudentId,
           weekStartDate,
           nights: {
-            create: nightDates.map((date) => ({ date })),
+            create: nightDates.map(date => ({ date })),
           },
         },
         include: {
@@ -252,9 +252,7 @@ export class ResidenceService {
    */
   async getAllPlansForWeek(weekStartDate: string, currentUser: User) {
     if (currentUser.role !== 'admin') {
-      throw new ForbiddenException(
-        'Only admins can view all residence plans',
-      );
+      throw new ForbiddenException('Only admins can view all residence plans');
     }
 
     const weekStart = this.timeService.localDateToUtcMidnight(weekStartDate);
