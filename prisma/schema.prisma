@@ -30,9 +30,9 @@ enum AttendanceStatus {
 }
 
 enum FormulaType {
-  MORNING     // accès AM
-  AFTERNOON   // accès PM
-  FULL        // accès AM + PM
+  MORNING // accès AM
+  AFTERNOON // accès PM
+  FULL // accès AM + PM
 }
 
 enum NotifyChannel {
@@ -66,22 +66,46 @@ enum PairingMethod {
   RANDOM
 }
 
+enum TransportDirection {
+  GO // Manor -> School
+  RETURN // School -> Manor
+}
+
+enum TransportRunStatus {
+  PLANNED
+  IN_PROGRESS
+  DONE
+  CANCELLED
+}
+
+enum TransportAssignmentStatus {
+  ASSIGNED
+  WAITLISTED
+  DROPPED
+}
+
+enum PresenceMark {
+  PRESENT
+  ABSENT
+  EXCUSED
+}
+
 // ---------- Core ----------
 model User {
-  id                 String    @id @default(uuid())
-  role               Role      @default(user)
+  id   String @id @default(uuid())
+  role Role   @default(user)
 
   // Identity
-  firstname          String
-  lastname           String
-  email              String    @unique
-  phone              String?
-  birthDate          DateTime?
-  fftLicenseNumber   String?   @unique
-  currentRanking     Int?
+  firstname        String
+  lastname         String
+  email            String    @unique
+  phone            String?
+  birthDate        DateTime?
+  fftLicenseNumber String?   @unique
+  currentRanking   Int?
 
   // Contract / formula
-  formula            FormulaType?
+  formula FormulaType?
 
   // Security
   password           String
@@ -95,67 +119,75 @@ model User {
   marketingConsentAt DateTime?
 
   // Images stored in DB (small scope <= 50 users)
-  avatarData         Bytes?
-  avatarMime         String?
-  backgroundData     Bytes?
-  backgroundMime     String?
+  avatarData     Bytes?
+  avatarMime     String?
+  backgroundData Bytes?
+  backgroundMime String?
 
   // Notifications preferences
-  notifyEmail        Boolean   @default(true)
-  notifySMS          Boolean   @default(false)
-  notifyWhatsApp     Boolean   @default(false)
+  notifyEmail    Boolean @default(true)
+  notifySMS      Boolean @default(false)
+  notifyWhatsApp Boolean @default(false)
 
-  attendances        Attendance[]
+  attendances            Attendance[]
   tournamentParticipants TournamentParticipant[]
-  ratingsGiven       SessionRating[] @relation("RaterUser")
-  ratingsReceived    SessionRating[] @relation("RatedUser")
+  ratingsGiven           SessionRating[]         @relation("RaterUser")
+  ratingsReceived        SessionRating[]         @relation("RatedUser")
 
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime? @updatedAt
+  // Transport & Residence relations
+  residenceWeekPlans                ResidenceWeekPlan[]
+  transportWeekPlans                TransportWeekPlan[]
+  transportRunAssignments           TransportRunAssignment[]
+  transportPresences                TransportPresence[]
+  transportRunsAsDriver             TransportRun[]           @relation("DriverUser")
+  transportTemplatesAsDefaultDriver TransportTemplate[]      @relation("DefaultDriverUser")
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
 
   @@index([lastname, firstname])
   @@index([email])
 }
 
 model Site {
-  id        String   @id @default(uuid())
-  name      String
-  address   String?
-  city      String?
-  isActive  Boolean  @default(true)
-  isMorningDefault Boolean?
+  id                 String   @id @default(uuid())
+  name               String
+  address            String?
+  city               String?
+  isActive           Boolean  @default(true)
+  isMorningDefault   Boolean?
   isAfternoonDefault Boolean?
 
-  sessions  Session[]
+  sessions Session[]
 
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
   updatedAt DateTime? @updatedAt
 
   @@unique([name])
 }
 
 model Session {
-  id          String       @id @default(uuid())
-  siteId      String
-  date        DateTime     // store day at local midnight (normalized) in UTC
-  slot        SessionSlot  // AM | PM
-  
+  id     String      @id @default(uuid())
+  siteId String
+  date   DateTime // store day at local midnight (normalized) in UTC
+  slot   SessionSlot // AM | PM
+
   // Time management
-  startTime   DateTime?    // specific start time for the session
-  endTime     DateTime?    // specific end time for the session
+  startTime DateTime? // specific start time for the session
+  endTime   DateTime? // specific end time for the session
 
   // Publication & lifecycle
-  isPublished Boolean      @default(false) // becomes true at Saturday 20:00
+  isPublished Boolean   @default(false) // becomes true at Saturday 20:00
   publishedAt DateTime?
-  isCanceled  Boolean      @default(false)
+  isCanceled  Boolean   @default(false)
   notes       String?
 
-  site        Site         @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  site        Site            @relation(fields: [siteId], references: [id], onDelete: Cascade)
   attendances Attendance[]
   ratings     SessionRating[]
 
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime?    @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
 
   // 1 session per site/day/slot
   @@unique([siteId, date, startTime, endTime])
@@ -165,26 +197,26 @@ model Session {
 }
 
 model Attendance {
-  id            String           @id @default(uuid())
-  sessionId     String
-  userId        String
-  status        AttendanceStatus // YES | NO
-  comment       String?
-  respondedAt   DateTime         @default(now())
+  id          String           @id @default(uuid())
+  sessionId   String
+  userId      String
+  status      AttendanceStatus // YES | NO
+  comment     String?
+  respondedAt DateTime         @default(now())
 
   // Denormalized flag to ease monthly billing/reporting
   // true when user's formula doesn't cover the session slot
-  outOfContract Boolean          @default(false)
+  outOfContract Boolean @default(false)
 
   // Audit
-  createdByAdmin Boolean         @default(false) // admin override after cutoff
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime?       @updatedAt
+  createdByAdmin Boolean   @default(false) // admin override after cutoff
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime? @updatedAt
 
-  session       Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([sessionId, userId])   // 1 answer per user per session
+  @@unique([sessionId, userId]) // 1 answer per user per session
   @@index([userId, sessionId])
   @@index([outOfContract])
   @@index([sessionId])
@@ -193,9 +225,9 @@ model Attendance {
 model SessionRating {
   id        String   @id @default(uuid())
   sessionId String
-  userId    String   // participant being rated
-  raterId   String   // admin who rated
-  score     Int      // 0..10
+  userId    String // participant being rated
+  raterId   String // admin who rated
+  score     Int // 0..10
   comment   String?  @db.Text
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -213,15 +245,15 @@ model SessionRating {
 
 // Disable auto-generation over school vacations (by range & region label)
 model HolidayPeriod {
-  id         String   @id @default(uuid())
-  label      String   // e.g., "Vacances Toussaint 2025 - Zone B"
-  region     String?  // optional region/code
-  startDate  DateTime // inclusive (local day start in UTC)
-  endDate    DateTime // inclusive (local day end in UTC)
-  isActive   Boolean  @default(true)
+  id        String   @id @default(uuid())
+  label     String // e.g., "Vacances Toussaint 2025 - Zone B"
+  region    String? // optional region/code
+  startDate DateTime // inclusive (local day start in UTC)
+  endDate   DateTime // inclusive (local day end in UTC)
+  isActive  Boolean  @default(true)
 
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime? @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
 
   @@index([startDate, endDate])
   @@index([isActive])
@@ -229,13 +261,13 @@ model HolidayPeriod {
 
 // Optional season boundaries for reporting/archives
 model Season {
-  id        String   @id @default(uuid())
-  name      String   // e.g., "2025-2026"
-  startsAt  DateTime
-  endsAt    DateTime
-  isActive  Boolean  @default(true)
+  id       String   @id @default(uuid())
+  name     String // e.g., "2025-2026"
+  startsAt DateTime
+  endsAt   DateTime
+  isActive Boolean  @default(true)
 
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
   updatedAt DateTime? @updatedAt
 
   @@unique([name])
@@ -243,37 +275,44 @@ model Season {
 
 // Global config (singleton row) to avoid hard-coding cutoffs in code
 model AppSetting {
-  id                          Int       @id @default(1)
-  responseCutoffWeekday       Int       @default(5)  // 5 = Friday (ISO: Mon=1..Sun=7)
-  responseCutoffHourLocal     Int       @default(18) // 18:00 Europe/Paris
-  publishWeekday              Int       @default(6)  // 6 = Saturday
-  publishHourLocal            Int       @default(20) // 20:00 Europe/Paris
-  autogenWeekday              Int       @default(5)  // 5 = Friday
-  autogenHourLocal            Int       @default(0)  // 00:00 Europe/Paris
+  id                      Int @id @default(1)
+  responseCutoffWeekday   Int @default(5) // 5 = Friday (ISO: Mon=1..Sun=7)
+  responseCutoffHourLocal Int @default(18) // 18:00 Europe/Paris
+  publishWeekday          Int @default(6) // 6 = Saturday
+  publishHourLocal        Int @default(20) // 20:00 Europe/Paris
+  autogenWeekday          Int @default(5) // 5 = Friday
+  autogenHourLocal        Int @default(0) // 00:00 Europe/Paris
 
-  createdAt                   DateTime  @default(now())
-  updatedAt                   DateTime? @updatedAt
+  // New: weekly planning window for Residence + Transport (Europe/Paris)
+  planWindowOpenWeekday      Int @default(6) // 6 = Saturday
+  planWindowOpenHourLocal    Int @default(0) // 00:00
+  planWindowCloseWeekday     Int @default(7) // 7 = Sunday
+  planWindowCloseHourLocal   Int @default(23) // 23:59-like (handle minutes)
+  planWindowCloseMinuteLocal Int @default(59)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
 }
 
 // ---------- Tournaments ----------
 model Tournament {
-  id            String            @id @default(uuid())
+  id            String           @id @default(uuid())
   title         String
   type          TournamentType
-  status        TournamentStatus  @default(DRAFT)
-  pairingMethod PairingMethod?    @default(BALANCED)
+  status        TournamentStatus @default(DRAFT)
+  pairingMethod PairingMethod?   @default(BALANCED)
   addressLine1  String
   addressLine2  String?
   postalCode    String
   city          String
   country       String
-  latitude      Float?            // optional for future map
-  longitude     Float?            // optional for future map
+  latitude      Float? // optional for future map
+  longitude     Float? // optional for future map
   startsAt      DateTime
   endsAt        DateTime
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
-  
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
   participants TournamentParticipant[]
   teams        TournamentTeam[]
 
@@ -283,46 +322,46 @@ model Tournament {
 }
 
 model TournamentParticipant {
-  id            String               @id @default(uuid())
-  tournamentId  String
-  userId        String
-  status        ParticipationStatus  @default(PENDING) // RSVP
-  feedback      String?
-  rankSnapshot  Int?                 // frozen ranking at pairing time
-  seed          Int?                 // optional seeding position (1..N)
-  
-  tournament    Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
-  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id           String              @id @default(uuid())
+  tournamentId String
+  userId       String
+  status       ParticipationStatus @default(PENDING) // RSVP
+  feedback     String?
+  rankSnapshot Int? // frozen ranking at pairing time
+  seed         Int? // optional seeding position (1..N)
+
+  tournament      Tournament             @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  user            User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
   teamMemberships TournamentTeamMember[]
-  
+
   @@unique([tournamentId, userId])
   @@index([userId])
   @@index([tournamentId])
 }
 
 model TournamentTeam {
-  id            String    @id @default(uuid())
-  tournamentId  String
-  orderIndex    Int       // for manual reordering (drag & drop)
-  placement     Int?      // 1st, 2nd, 3rd... set at the end (team result)
-  locked        Boolean   @default(false) // locked teams preserved during regeneration
-  notes         String?   // free text for admin
-  
-  tournament    Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
-  members       TournamentTeamMember[]
-  
+  id           String  @id @default(uuid())
+  tournamentId String
+  orderIndex   Int // for manual reordering (drag & drop)
+  placement    Int? // 1st, 2nd, 3rd... set at the end (team result)
+  locked       Boolean @default(false) // locked teams preserved during regeneration
+  notes        String? // free text for admin
+
+  tournament Tournament             @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  members    TournamentTeamMember[]
+
   @@unique([tournamentId, orderIndex])
   @@index([tournamentId])
 }
 
 model TournamentTeamMember {
-  id               String          @id @default(uuid())
-  teamId           String
-  participantId    String
-  
-  team             TournamentTeam  @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  participant      TournamentParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
-  
+  id            String @id @default(uuid())
+  teamId        String
+  participantId String
+
+  team        TournamentTeam        @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  participant TournamentParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+
   @@unique([teamId, participantId])
   @@index([teamId])
   @@index([participantId])
@@ -330,22 +369,196 @@ model TournamentTeamMember {
 
 // ---------- Public Events ----------
 model PublicEvent {
-  id                     String   @id @default(uuid())
-  slug                   String   @unique
-  name                   String
-  description            String?  @db.Text
-  startTime              DateTime?
-  endTime                DateTime?
-  backgroundImageUrl     String?
+  id                      String    @id @default(uuid())
+  slug                    String    @unique
+  name                    String
+  description             String?   @db.Text
+  startTime               DateTime?
+  endTime                 DateTime?
+  backgroundImageUrl      String?
   externalRegistrationUrl String?
-  isPublished            Boolean  @default(false)
-  orderIndex             Int      @default(0)
+  isPublished             Boolean   @default(false)
+  orderIndex              Int       @default(0)
 
-  createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([isPublished, orderIndex])
   @@index([startTime])
   @@index([endTime])
   @@map("public_events")
+}
+
+// ---------- Transport & Residence ----------
+
+// School entity for transport destinations
+model School {
+  id       String  @id @default(uuid())
+  name     String  @unique
+  address  String?
+  city     String?
+  isActive Boolean @default(true)
+
+  templates TransportTemplate[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Transport template = traject type (e.g., Manor -> School A, GO at 07:45, Mon-Fri)
+model TransportTemplate {
+  id              String             @id @default(uuid())
+  name            String
+  direction       TransportDirection
+  originLabel     String // e.g., "Manor"
+  destinationId   String // -> School
+  targetTime      String // "HH:mm" local time string (Europe/Paris)
+  capacity        Int // max seats
+  daysOfWeek      Int[] // ISO 1..7 (Mon..Sun)
+  activeFrom      DateTime?
+  activeTo        DateTime?
+  defaultDriverId String? // -> User (admin/intendant)
+  defaultVehicle  String? // free text
+
+  destination   School @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+  defaultDriver User?  @relation("DefaultDriverUser", fields: [defaultDriverId], references: [id])
+
+  planEntries TransportPlanEntry[]
+  runs        TransportRun[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([destinationId])
+  @@index([activeFrom, activeTo])
+}
+
+// Students' weekly wishes for transport (NEXT week only, created during weekend window)
+model TransportWeekPlan {
+  id            String   @id @default(uuid())
+  studentId     String
+  weekStartDate DateTime // Monday 00:00:00 local normalized to UTC
+
+  entries TransportPlanEntry[]
+
+  student User @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([studentId, weekStartDate])
+  @@index([weekStartDate])
+}
+
+model TransportPlanEntry {
+  id         String             @id @default(uuid())
+  weekPlanId String
+  templateId String
+  date       DateTime // specific calendar day in that target week (normalized local day in UTC)
+  direction  TransportDirection // denormalized for easier queries
+
+  weekPlan TransportWeekPlan @relation(fields: [weekPlanId], references: [id], onDelete: Cascade)
+  template TransportTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([weekPlanId, templateId, date])
+  @@index([date])
+  @@index([templateId, date])
+}
+
+// Runs generated after window close for NEXT week
+model TransportRun {
+  id          String             @id @default(uuid())
+  templateId  String
+  date        DateTime // day
+  plannedTime DateTime // date + local HH:mm from template
+  status      TransportRunStatus @default(PLANNED)
+  vehicle     String?
+  driverId    String?
+
+  template TransportTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  driver   User?             @relation("DriverUser", fields: [driverId], references: [id])
+
+  assignments TransportRunAssignment[]
+  presences   TransportPresence[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([templateId, date, plannedTime])
+  @@index([date])
+  @@index([status])
+}
+
+model TransportRunAssignment {
+  id        String                    @id @default(uuid())
+  runId     String
+  studentId String
+  status    TransportAssignmentStatus @default(ASSIGNED) // WAITLISTED if >capacity
+  source    String // "WEEK_PLAN" | "ADMIN"
+
+  run     TransportRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  student User         @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([runId, studentId])
+  @@index([studentId])
+  @@index([runId])
+}
+
+model TransportPresence {
+  id        String        @id @default(uuid())
+  runId     String
+  studentId String
+  mark      PresenceMark? // set by intendant day-of
+  notes     String?
+
+  run     TransportRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  student User         @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([runId, studentId])
+  @@index([runId])
+  @@index([studentId])
+}
+
+// ---------- Residence (Manor) weekly ----------
+
+model ResidenceWeekPlan {
+  id            String   @id @default(uuid())
+  studentId     String
+  weekStartDate DateTime // Monday 00:00 local normalized to UTC
+
+  nights ResidenceNight[] // which dates the student plans to sleep
+
+  student User @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([studentId, weekStartDate])
+  @@index([weekStartDate])
+}
+
+model ResidenceNight {
+  id         String   @id @default(uuid())
+  weekPlanId String
+  date       DateTime // the night (local day) within that week
+
+  // Simple "realized" mark by intendant later
+  confirmedPresent Boolean @default(false)
+
+  weekPlan ResidenceWeekPlan @relation(fields: [weekPlanId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([weekPlanId, date])
+  @@index([date])
 }
