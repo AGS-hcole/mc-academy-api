@@ -266,7 +266,7 @@ export class UsersService {
       const nextCursor = hasMore ? items[items.length - 1].id : null;
 
       // Transform sessions to feed items
-      const feedItems: SessionFeedItemDto[] = items.map(session => {
+      let feedItems: SessionFeedItemDto[] = items.map(session => {
         // Find user's attendance
         const userAttendance = session.attendances.find(
           att => att.userId === userId,
@@ -302,6 +302,12 @@ export class UsersService {
             : null,
           participantsCount,
         };
+      });
+
+      feedItems = feedItems.sort((a, b) => {
+        const aTime = a.startTime ? new Date(a.startTime).getTime() : 0;
+        const bTime = b.startTime ? new Date(b.startTime).getTime() : 0;
+        return bTime - aTime;
       });
 
       return {
