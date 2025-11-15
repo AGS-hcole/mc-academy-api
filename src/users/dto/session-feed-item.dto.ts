@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { SocialTargetTypeDto } from '../../modules/social/dto';
 
 export class SessionFeedItemDto {
   @ApiProperty({
@@ -73,4 +74,30 @@ export class SessionFeedItemDto {
     example: 12,
   })
   participantsCount: number;
+
+  @ApiProperty({
+    description: 'Social target type',
+    enum: SocialTargetTypeDto,
+  })
+  socialTargetType: SocialTargetTypeDto;
+
+  @ApiProperty({ description: 'Underlying entity id (session id)' })
+  socialEntityId: string;
+
+  @ApiProperty({
+    description: 'Social target id (if any)',
+    nullable: true,
+  })
+  socialTargetId: string | null;
+
+  @ApiProperty({ description: 'Total likes count for this target' })
+  likeCount: number;
+
+  @ApiProperty({ description: 'Total comments count for this target' })
+  commentCount: number;
+
+  @ApiProperty({
+    description: 'Whether the current user has liked this target',
+  })
+  userHasLiked: boolean;
 }

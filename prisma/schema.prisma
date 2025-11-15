@@ -66,6 +66,12 @@ enum PairingMethod {
   RANDOM
 }
 
+enum SocialTargetType {
+  SESSION
+  TOURNAMENT
+  // Add more later: NEWS, POST, ANNOUNCEMENT, etc.
+}
+
 // ---------- Core ----------
 model User {
   id                 String    @id @default(uuid())
@@ -109,6 +115,8 @@ model User {
   tournamentParticipants TournamentParticipant[]
   ratingsGiven       SessionRating[] @relation("RaterUser")
   ratingsReceived    SessionRating[] @relation("RatedUser")
+  socialLikes        SocialLike[]
+  socialComments     SocialComment[]
 
   createdAt          DateTime  @default(now())
   updatedAt          DateTime? @updatedAt
@@ -348,4 +356,45 @@ model PublicEvent {
   @@index([startTime])
   @@index([endTime])
   @@map("public_events")
+}
+
+// ---------- Social (Likes & Comments) ----------
+model SocialTarget {
+  id        String           @id @default(cuid())
+  type      SocialTargetType
+  entityId  String           // ID of the underlying entity (e.g. Session.id, Tournament.id)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  likes     SocialLike[]
+  comments  SocialComment[]
+
+  @@unique([type, entityId])
+}
+
+model SocialLike {
+  id        String       @id @default(cuid())
+  target    SocialTarget @relation(fields: [targetId], references: [id], onDelete: Cascade)
+  targetId  String
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  createdAt DateTime     @default(now())
+
+  @@unique([targetId, userId]) // One like per user per target
+}
+
+model SocialComment {
+  id        String       @id @default(cuid())
+  target    SocialTarget @relation(fields: [targetId], references: [id], onDelete: Cascade)
+  targetId  String
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  content   String
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  // Optional: threaded comments (replies)
+  parent    SocialComment?  @relation("CommentReplies", fields: [parentId], references: [id])
+  parentId  String?
+  replies   SocialComment[] @relation("CommentReplies")
 }

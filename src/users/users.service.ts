@@ -3,6 +3,8 @@ import {
   ConflictException,
   InternalServerErrorException,
   NotFoundException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateMeDto } from './dto/update-me.dto';
@@ -10,11 +12,17 @@ import { UpdateConsentsDto } from './dto/update-consents.dto';
 import { SessionFeedQueryDto } from './dto/session-feed-query.dto';
 import { SessionFeedResponseDto } from './dto/session-feed-response.dto';
 import { SessionFeedItemDto } from './dto/session-feed-item.dto';
-import { Prisma } from '@prisma/client';
+import { Prisma, SocialTargetType } from '@prisma/client';
+import { SocialService } from '../modules/social/social.service';
+import { SocialTargetTypeDto } from '../modules/social/dto';
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Inject(forwardRef(() => SocialService))
+    private socialService: SocialService,
+  ) {}
 
   async updateMe(userId: string, dto: UpdateMeDto) {
     try {
@@ -265,6 +273,17 @@ export class UsersService {
       const items = hasMore ? sessions.slice(0, TAKE) : sessions;
       const nextCursor = hasMore ? items[items.length - 1].id : null;
 
+      // Get social data for all sessions
+      const targets = items.map(session => ({
+        type: SocialTargetType.SESSION,
+        entityId: session.id,
+      }));
+
+      const socialState = await this.socialService.getSocialStateForTargets(
+        targets,
+        userId,
+      );
+
       // Transform sessions to feed items
       let feedItems: SessionFeedItemDto[] = items.map(session => {
         // Find user's attendance
@@ -287,6 +306,15 @@ export class UsersService {
         // Count participants (attendances with YES status)
         const participantsCount = session.attendances.length;
 
+        // Get social data
+        const key = `${SocialTargetType.SESSION}:${session.id}`;
+        const social = socialState[key] ?? {
+          likeCount: 0,
+          commentCount: 0,
+          userHasLiked: false,
+          targetId: null,
+        };
+
         return {
           sessionId: session.id,
           date: session.date.toISOString(),
@@ -301,6 +329,12 @@ export class UsersService {
             ? Math.round(averageRating * 10) / 10
             : null,
           participantsCount,
+          socialTargetType: SocialTargetTypeDto.SESSION,
+          socialEntityId: session.id,
+          socialTargetId: social.targetId,
+          likeCount: social.likeCount,
+          commentCount: social.commentCount,
+          userHasLiked: social.userHasLiked,
         };
       });
 
