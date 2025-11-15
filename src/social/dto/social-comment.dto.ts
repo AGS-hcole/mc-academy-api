@@ -35,6 +35,9 @@ export class CommentItemDto {
   userId: string;
 
   @ApiProperty()
+  fullName: string;
+
+  @ApiProperty()
   content: string;
 
   @ApiProperty()

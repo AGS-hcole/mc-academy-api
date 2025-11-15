@@ -154,12 +154,21 @@ export class SocialService {
         content: dto.content,
         parentId: dto.parentId,
       },
+      include: {
+        user: {
+          select: {
+            firstname: true,
+            lastname: true,
+          },
+        },
+      },
     });
 
     return {
       id: comment.id,
       targetId: comment.targetId,
       userId: comment.userId,
+      fullName: `${comment.user.firstname} ${comment.user.lastname}`,
       content: comment.content,
       createdAt: comment.createdAt,
       updatedAt: comment.updatedAt,
@@ -197,13 +206,21 @@ export class SocialService {
     const comments = await this.prisma.socialComment.findMany({
       where: { targetId: target.id },
       orderBy: { createdAt: 'asc' },
-      take: take + 1, // +1 to check if there's more
+      take: take + 1,
       ...(dto.cursor
         ? {
             cursor: { id: dto.cursor },
-            skip: 1, // Skip the cursor item
+            skip: 1,
           }
         : {}),
+      include: {
+        user: {
+          select: {
+            firstname: true,
+            lastname: true,
+          },
+        },
+      },
     });
 
     const hasMore = comments.length > take;
@@ -218,6 +235,7 @@ export class SocialService {
       createdAt: c.createdAt,
       updatedAt: c.updatedAt,
       parentId: c.parentId || undefined,
+      fullName: `${c.user.firstname} ${c.user.lastname}`,
     }));
 
     return {
