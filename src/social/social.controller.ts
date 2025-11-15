@@ -17,8 +17,8 @@ import {
   ApiResponse,
 } from '@nestjs/swagger';
 import { SocialService } from './social.service';
-import { AuthGuard } from '../../auth/guards/auth.guards';
-import { GetUser } from '../../auth/decorators/get-user.decorator';
+import { AuthGuard } from '../auth/guards/auth.guards';
+import { GetUser } from '../auth/decorators/get-user.decorator';
 import {
   SocialTargetInputDto,
   SocialLikeResponseDto,

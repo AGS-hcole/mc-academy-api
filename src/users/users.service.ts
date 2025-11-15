@@ -13,8 +13,8 @@ import { SessionFeedQueryDto } from './dto/session-feed-query.dto';
 import { SessionFeedResponseDto } from './dto/session-feed-response.dto';
 import { SessionFeedItemDto } from './dto/session-feed-item.dto';
 import { Prisma, SocialTargetType } from '@prisma/client';
-import { SocialService } from '../modules/social/social.service';
-import { SocialTargetTypeDto } from '../modules/social/dto';
+import { SocialService } from '../social/social.service';
+import { SocialTargetTypeDto } from '../social/dto';
 
 @Injectable()
 export class UsersService {

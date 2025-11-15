@@ -17,7 +17,7 @@ import { MetadataModule } from './metadata/metadata.module';
 import { TournamentsModule } from './tournaments/tournaments.module';
 import { RatingsModule } from './ratings/ratings.module';
 import { EventsModule } from './events/events.module';
-import { SocialModule } from './modules/social/social.module';
+import { SocialModule } from './social/social.module';
 
 @Module({
   imports: [

@@ -3,7 +3,7 @@ import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AuthModule } from '../auth/auth.module';
-import { SocialModule } from '../modules/social/social.module';
+import { SocialModule } from '../social/social.module';
 
 @Module({
   controllers: [UsersController],

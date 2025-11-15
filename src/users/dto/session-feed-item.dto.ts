@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { SocialTargetTypeDto } from '../../modules/social/dto';
+import { SocialTargetTypeDto } from '../../social/dto';
 
 export class SessionFeedItemDto {
   @ApiProperty({
