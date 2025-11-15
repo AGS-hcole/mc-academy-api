@@ -54,7 +54,7 @@ export class SessionFeedItemDto {
   @ApiProperty({
     nullable: true,
     description:
-      'Rating given by admins for this user on this session, or null if not rated yet',
+      'Rating received by this user from admins for this session, or null if not rated yet (0-10 scale)',
     example: 8,
   })
   userRating: number | null;

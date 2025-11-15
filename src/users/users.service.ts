@@ -272,7 +272,8 @@ export class UsersService {
           att => att.userId === userId,
         );
 
-        // Find user's rating (rating given to this user by admins)
+        // Find user's rating (rating received by this user from admins)
+        // Note: SessionRating.userId is the participant being rated, not the rater
         const userRating = session.ratings.find(r => r.userId === userId);
 
         // Calculate average rating
