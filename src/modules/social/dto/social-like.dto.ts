@@ -5,7 +5,7 @@ export class SocialLikeResponseDto {
   targetId: string;
 
   @ApiProperty()
-  likeCount: number;
+  likesCount: number;
 
   @ApiProperty()
   userHasLiked: boolean;

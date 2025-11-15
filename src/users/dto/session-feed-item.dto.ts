@@ -91,13 +91,13 @@ export class SessionFeedItemDto {
   socialTargetId: string | null;
 
   @ApiProperty({ description: 'Total likes count for this target' })
-  likeCount: number;
+  likesCount: number;
 
   @ApiProperty({ description: 'Total comments count for this target' })
-  commentCount: number;
+  commentsCount: number;
 
   @ApiProperty({
     description: 'Whether the current user has liked this target',
   })
-  userHasLiked: boolean;
+  isLikedByUser: boolean;
 }

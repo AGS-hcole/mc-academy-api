@@ -68,7 +68,7 @@ export class SocialService {
     }
 
     // Get like count and user's like status
-    const likeCount = await this.prisma.socialLike.count({
+    const likesCount = await this.prisma.socialLike.count({
       where: { targetId: target.id },
     });
 
@@ -83,7 +83,7 @@ export class SocialService {
 
     return {
       targetId: target.id,
-      likeCount,
+      likesCount,
       userHasLiked: !!userLike,
     };
   }
@@ -109,7 +109,7 @@ export class SocialService {
       // No target means no likes, return empty state
       return {
         targetId: '',
-        likeCount: 0,
+        likesCount: 0,
         userHasLiked: false,
       };
     }
@@ -129,13 +129,13 @@ export class SocialService {
     }
 
     // Get updated like count
-    const likeCount = await this.prisma.socialLike.count({
+    const likesCount = await this.prisma.socialLike.count({
       where: { targetId: target.id },
     });
 
     return {
       targetId: target.id,
-      likeCount,
+      likesCount,
       userHasLiked: false,
     };
   }
@@ -271,9 +271,9 @@ export class SocialService {
     Record<
       string,
       {
-        likeCount: number;
-        commentCount: number;
-        userHasLiked: boolean;
+        likesCount: number;
+        commentsCount: number;
+        isLikedByUser: boolean;
         targetId: string | null;
       }
     >
@@ -308,9 +308,9 @@ export class SocialService {
     const result: Record<
       string,
       {
-        likeCount: number;
-        commentCount: number;
-        userHasLiked: boolean;
+        likesCount: number;
+        commentsCount: number;
+        isLikedByUser: boolean;
         targetId: string | null;
       }
     > = {};
@@ -319,9 +319,9 @@ export class SocialService {
     for (const target of targets) {
       const key = `${target.type}:${target.entityId}`;
       result[key] = {
-        likeCount: 0,
-        commentCount: 0,
-        userHasLiked: false,
+        likesCount: 0,
+        commentsCount: 0,
+        isLikedByUser: false,
         targetId: null,
       };
     }
@@ -330,9 +330,9 @@ export class SocialService {
     for (const socialTarget of socialTargets) {
       const key = `${socialTarget.type}:${socialTarget.entityId}`;
       result[key] = {
-        likeCount: socialTarget._count.likes,
-        commentCount: socialTarget._count.comments,
-        userHasLiked: socialTarget.likes.length > 0,
+        likesCount: socialTarget._count.likes,
+        commentsCount: socialTarget._count.comments,
+        isLikedByUser: socialTarget.likes.length > 0,
         targetId: socialTarget.id,
       };
     }

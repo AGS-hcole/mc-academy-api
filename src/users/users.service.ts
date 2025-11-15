@@ -309,9 +309,9 @@ export class UsersService {
         // Get social data
         const key = `${SocialTargetType.SESSION}:${session.id}`;
         const social = socialState[key] ?? {
-          likeCount: 0,
-          commentCount: 0,
-          userHasLiked: false,
+          likesCount: 0,
+          commentsCount: 0,
+          isLikedByUser: false,
           targetId: null,
         };
 
@@ -332,9 +332,9 @@ export class UsersService {
           socialTargetType: SocialTargetTypeDto.SESSION,
           socialEntityId: session.id,
           socialTargetId: social.targetId,
-          likeCount: social.likeCount,
-          commentCount: social.commentCount,
-          userHasLiked: social.userHasLiked,
+          likesCount: social.likesCount,
+          commentsCount: social.commentsCount,
+          isLikedByUser: social.isLikedByUser,
         };
       });
 
