@@ -17,6 +17,7 @@ import { MetadataModule } from './metadata/metadata.module';
 import { TournamentsModule } from './tournaments/tournaments.module';
 import { RatingsModule } from './ratings/ratings.module';
 import { EventsModule } from './events/events.module';
+import { SocialModule } from './social/social.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { EventsModule } from './events/events.module';
     TournamentsModule,
     RatingsModule,
     EventsModule,
+    SocialModule,
   ],
   controllers: [AppController],
   providers: [AppService],
