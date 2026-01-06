@@ -88,15 +88,12 @@ enum PresenceMark {
   PRESENT
   ABSENT
   EXCUSED
-<<<<<<< HEAD
-=======
 }
 
 enum SocialTargetType {
   SESSION
   TOURNAMENT
   // Add more later: NEWS, POST, ANNOUNCEMENT, etc.
->>>>>>> 412b87aecb59b20985062915a1f95ffd961423df
 }
 
 // ---------- Core ----------
@@ -153,13 +150,8 @@ model User {
 
   createdAt DateTime  @default(now())
   updatedAt DateTime? @updatedAt
-  ratingsGiven       SessionRating[] @relation("RaterUser")
-  ratingsReceived    SessionRating[] @relation("RatedUser")
   socialLikes        SocialLike[]
   socialComments     SocialComment[]
-
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime? @updatedAt
 
   @@index([lastname, firstname])
   @@index([email])
@@ -577,8 +569,8 @@ model ResidenceNight {
 
   @@unique([weekPlanId, date])
   @@index([date])
-<<<<<<< HEAD
-=======
+}
+
 // ---------- Social (Likes & Comments) ----------
 model SocialTarget {
   id        String           @id @default(cuid())
@@ -618,5 +610,4 @@ model SocialComment {
   parent    SocialComment?  @relation("CommentReplies", fields: [parentId], references: [id])
   parentId  String?
   replies   SocialComment[] @relation("CommentReplies")
->>>>>>> 412b87aecb59b20985062915a1f95ffd961423df
 }
