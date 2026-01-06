@@ -22,6 +22,10 @@ import { ResidenceModule } from './residence/residence.module';
 import { TransportTemplatesModule } from './transport-templates/transport-templates.module';
 import { TransportPlansModule } from './transport-plans/transport-plans.module';
 import { TransportRunsModule } from './transport-runs/transport-runs.module';
+<<<<<<< HEAD
+=======
+import { SocialModule } from './social/social.module';
+>>>>>>> 412b87aecb59b20985062915a1f95ffd961423df
 
 @Module({
   imports: [
@@ -46,6 +50,10 @@ import { TransportRunsModule } from './transport-runs/transport-runs.module';
     TransportTemplatesModule,
     TransportPlansModule,
     TransportRunsModule,
+<<<<<<< HEAD
+=======
+    SocialModule,
+>>>>>>> 412b87aecb59b20985062915a1f95ffd961423df
   ],
   controllers: [AppController],
   providers: [AppService],
