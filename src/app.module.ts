@@ -22,6 +22,7 @@ import { ResidenceModule } from './residence/residence.module';
 import { TransportTemplatesModule } from './transport-templates/transport-templates.module';
 import { TransportPlansModule } from './transport-plans/transport-plans.module';
 import { TransportRunsModule } from './transport-runs/transport-runs.module';
+import { SocialModule } from './social/social.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { TransportRunsModule } from './transport-runs/transport-runs.module';
     TransportTemplatesModule,
     TransportPlansModule,
     TransportRunsModule,
+    SocialModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -54,12 +54,12 @@ export class SessionsCron {
 
     // Définition des fenêtres (heures en local Europe/Paris)
     const MORNING_WINDOWS: Array<[number, number, number, number]> = [
-      [9, 0, 10, 30],
-      [10, 30, 12, 0],
+      [8, 0, 9, 30], // UTC TIME
+      [9, 30, 11, 0], // UTC TIME
     ];
     const AFTERNOON_WINDOWS: Array<[number, number, number, number]> = [
-      [15, 0, 16, 30],
-      [16, 30, 18, 0],
+      [14, 0, 15, 30], // UTC TIME
+      [15, 30, 17, 0], // UTC TIME
     ];
 
     for (let i = 0; i < 5; i++) {

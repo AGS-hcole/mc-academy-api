@@ -54,10 +54,11 @@ export class UserService {
       };
 
       // Add optional fields if provided
-      if (dto.phone !== undefined) userData.phone = dto.phone.trim();
-      if (dto.birthDate !== undefined)
+      if (dto.phone !== undefined && dto.phone !== null)
+        userData.phone = dto.phone.trim();
+      if (dto.birthDate !== undefined && dto.birthDate !== null)
         userData.birthDate = new Date(dto.birthDate.trim());
-      if (dto.fftLicenseNumber !== undefined)
+      if (dto.fftLicenseNumber !== undefined && dto.fftLicenseNumber !== null)
         userData.fftLicenseNumber = dto.fftLicenseNumber.trim();
       if (dto.currentRanking !== undefined)
         userData.currentRanking = dto.currentRanking;
@@ -217,16 +218,19 @@ export class UserService {
       // Build the update data object dynamically, only including provided fields
       const updateData: any = {};
 
-      if (dto.firstname !== undefined)
+      if (dto.firstname !== undefined && dto.firstname !== null)
         updateData.firstname = dto.firstname.trim();
-      if (dto.lastname !== undefined) updateData.lastname = dto.lastname.trim();
-      if (dto.email !== undefined)
+      if (dto.lastname !== undefined && dto.lastname !== null)
+        updateData.lastname = dto.lastname.trim();
+      if (dto.email !== undefined && dto.email !== null)
         updateData.email = dto.email.toLowerCase().trim();
-      if (dto.role !== undefined) updateData.role = dto.role;
-      if (dto.phone !== undefined) updateData.phone = dto.phone.trim();
-      if (dto.birthDate !== undefined)
+      if (dto.role !== undefined && dto.role !== null)
+        updateData.role = dto.role;
+      if (dto.phone !== undefined && dto.phone !== null)
+        updateData.phone = dto.phone.trim();
+      if (dto.birthDate !== undefined && dto.birthDate !== null)
         updateData.birthDate = new Date(dto.birthDate.trim());
-      if (dto.fftLicenseNumber !== undefined)
+      if (dto.fftLicenseNumber !== undefined && dto.fftLicenseNumber !== null)
         updateData.fftLicenseNumber = dto.fftLicenseNumber.trim();
       if (dto.currentRanking !== undefined)
         updateData.currentRanking = dto.currentRanking;

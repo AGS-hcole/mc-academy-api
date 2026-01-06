@@ -9,6 +9,8 @@ import {
   UploadedFile,
   Res,
   NotFoundException,
+  Query,
+  Param,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -17,14 +19,18 @@ import {
   ApiConsumes,
   ApiBody,
   ApiResponse,
+  ApiParam,
 } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
 import { AuthGuard } from '../auth/guards/auth.guards';
+import { AdminGuard } from '../auth/guards/admin.guard';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { UsersService } from './users.service';
 import { UpdateMeDto } from './dto/update-me.dto';
 import { UpdateConsentsDto } from './dto/update-consents.dto';
+import { SessionFeedQueryDto } from './dto/session-feed-query.dto';
+import { SessionFeedResponseDto } from './dto/session-feed-response.dto';
 import { ImageUploadPipe } from './upload/image-upload.pipe';
 
 @ApiTags('Users')
@@ -194,5 +200,52 @@ export class UsersController {
     });
 
     res.end(buffer);
+  }
+
+  @Get('me/sessions/feed')
+  @UseGuards(AuthGuard)
+  @ApiOperation({
+    summary: 'Get session feed for current user',
+    description:
+      'Returns a paginated feed of sessions that the current user has attended, sorted by most recent first. Supports cursor-based pagination for infinite scrolling.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Session feed retrieved successfully',
+    type: SessionFeedResponseDto,
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async getMySessionFeed(
+    @GetUser() user: any,
+    @Query() query: SessionFeedQueryDto,
+  ): Promise<SessionFeedResponseDto> {
+    return this.usersService.getUserSessionFeed(user.id, query);
+  }
+
+  @Get(':userId/sessions/feed')
+  @UseGuards(AdminGuard)
+  @ApiOperation({
+    summary: 'Get session feed for a specific user',
+    description:
+      'Returns a paginated feed of sessions that a specific user has attended, sorted by most recent first. Admin access required. Supports cursor-based pagination for infinite scrolling.',
+  })
+  @ApiParam({
+    name: 'userId',
+    description: 'User ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Session feed retrieved successfully',
+    type: SessionFeedResponseDto,
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Admin access required' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  async getUserSessionFeed(
+    @Param('userId') userId: string,
+    @Query() query: SessionFeedQueryDto,
+  ): Promise<SessionFeedResponseDto> {
+    return this.usersService.getUserSessionFeed(userId, query);
   }
 }
