@@ -30,9 +30,9 @@ enum AttendanceStatus {
 }
 
 enum FormulaType {
-  MORNING     // accès AM
-  AFTERNOON   // accès PM
-  FULL        // accès AM + PM
+  MORNING // accès AM
+  AFTERNOON // accès PM
+  FULL // accès AM + PM
 }
 
 enum NotifyChannel {
@@ -72,22 +72,27 @@ enum SocialTargetType {
   // Add more later: NEWS, POST, ANNOUNCEMENT, etc.
 }
 
+enum ResidenceStayStatus {
+  PLANNED // created by user/admin
+  CANCELED // user/admin removed before day ends
+}
+
 // ---------- Core ----------
 model User {
-  id                 String    @id @default(uuid())
-  role               Role      @default(user)
+  id   String @id @default(uuid())
+  role Role   @default(user)
 
   // Identity
-  firstname          String
-  lastname           String
-  email              String    @unique
-  phone              String?
-  birthDate          DateTime?
-  fftLicenseNumber   String?   @unique
-  currentRanking     Int?
+  firstname        String
+  lastname         String
+  email            String    @unique
+  phone            String?
+  birthDate        DateTime?
+  fftLicenseNumber String?   @unique
+  currentRanking   Int?
 
   // Contract / formula
-  formula            FormulaType?
+  formula FormulaType?
 
   // Security
   password           String
@@ -101,69 +106,70 @@ model User {
   marketingConsentAt DateTime?
 
   // Images stored in DB (small scope <= 50 users)
-  avatarData         Bytes?
-  avatarMime         String?
-  backgroundData     Bytes?
-  backgroundMime     String?
+  avatarData     Bytes?
+  avatarMime     String?
+  backgroundData Bytes?
+  backgroundMime String?
 
   // Notifications preferences
-  notifyEmail        Boolean   @default(true)
-  notifySMS          Boolean   @default(false)
-  notifyWhatsApp     Boolean   @default(false)
+  notifyEmail    Boolean @default(true)
+  notifySMS      Boolean @default(false)
+  notifyWhatsApp Boolean @default(false)
 
-  attendances        Attendance[]
+  attendances            Attendance[]
   tournamentParticipants TournamentParticipant[]
-  ratingsGiven       SessionRating[] @relation("RaterUser")
-  ratingsReceived    SessionRating[] @relation("RatedUser")
-  socialLikes        SocialLike[]
-  socialComments     SocialComment[]
+  ratingsGiven           SessionRating[]         @relation("RaterUser")
+  ratingsReceived        SessionRating[]         @relation("RatedUser")
+  socialLikes            SocialLike[]
+  socialComments         SocialComment[]
+  residenceStays         ResidenceStay[]
 
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime? @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
 
   @@index([lastname, firstname])
   @@index([email])
 }
 
 model Site {
-  id        String   @id @default(uuid())
-  name      String
-  address   String?
-  city      String?
-  isActive  Boolean  @default(true)
-  isMorningDefault Boolean?
+  id                 String   @id @default(uuid())
+  name               String
+  address            String?
+  city               String?
+  isActive           Boolean  @default(true)
+  isMorningDefault   Boolean?
   isAfternoonDefault Boolean?
 
-  sessions  Session[]
+  sessions Session[]
 
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
   updatedAt DateTime? @updatedAt
 
   @@unique([name])
 }
 
 model Session {
-  id          String       @id @default(uuid())
-  siteId      String
-  date        DateTime     // store day at local midnight (normalized) in UTC
-  slot        SessionSlot  // AM | PM
-  
+  id     String      @id @default(uuid())
+  siteId String
+  date   DateTime // store day at local midnight (normalized) in UTC
+  slot   SessionSlot // AM | PM
+
   // Time management
-  startTime   DateTime?    // specific start time for the session
-  endTime     DateTime?    // specific end time for the session
+  startTime DateTime? // specific start time for the session
+  endTime   DateTime? // specific end time for the session
 
   // Publication & lifecycle
-  isPublished Boolean      @default(false) // becomes true at Saturday 20:00
+  isPublished Boolean   @default(false) // becomes true at Saturday 20:00
   publishedAt DateTime?
-  isCanceled  Boolean      @default(false)
+  isCanceled  Boolean   @default(false)
   notes       String?
 
-  site        Site         @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  site        Site            @relation(fields: [siteId], references: [id], onDelete: Cascade)
   attendances Attendance[]
   ratings     SessionRating[]
 
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime?    @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
 
   // 1 session per site/day/slot
   @@unique([siteId, date, startTime, endTime])
@@ -173,26 +179,26 @@ model Session {
 }
 
 model Attendance {
-  id            String           @id @default(uuid())
-  sessionId     String
-  userId        String
-  status        AttendanceStatus // YES | NO
-  comment       String?
-  respondedAt   DateTime         @default(now())
+  id          String           @id @default(uuid())
+  sessionId   String
+  userId      String
+  status      AttendanceStatus // YES | NO
+  comment     String?
+  respondedAt DateTime         @default(now())
 
   // Denormalized flag to ease monthly billing/reporting
   // true when user's formula doesn't cover the session slot
-  outOfContract Boolean          @default(false)
+  outOfContract Boolean @default(false)
 
   // Audit
-  createdByAdmin Boolean         @default(false) // admin override after cutoff
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime?       @updatedAt
+  createdByAdmin Boolean   @default(false) // admin override after cutoff
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime? @updatedAt
 
-  session       Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([sessionId, userId])   // 1 answer per user per session
+  @@unique([sessionId, userId]) // 1 answer per user per session
   @@index([userId, sessionId])
   @@index([outOfContract])
   @@index([sessionId])
@@ -201,9 +207,9 @@ model Attendance {
 model SessionRating {
   id        String   @id @default(uuid())
   sessionId String
-  userId    String   // participant being rated
-  raterId   String   // admin who rated
-  score     Int      // 0..10
+  userId    String // participant being rated
+  raterId   String // admin who rated
+  score     Int // 0..10
   comment   String?  @db.Text
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -221,15 +227,15 @@ model SessionRating {
 
 // Disable auto-generation over school vacations (by range & region label)
 model HolidayPeriod {
-  id         String   @id @default(uuid())
-  label      String   // e.g., "Vacances Toussaint 2025 - Zone B"
-  region     String?  // optional region/code
-  startDate  DateTime // inclusive (local day start in UTC)
-  endDate    DateTime // inclusive (local day end in UTC)
-  isActive   Boolean  @default(true)
+  id        String   @id @default(uuid())
+  label     String // e.g., "Vacances Toussaint 2025 - Zone B"
+  region    String? // optional region/code
+  startDate DateTime // inclusive (local day start in UTC)
+  endDate   DateTime // inclusive (local day end in UTC)
+  isActive  Boolean  @default(true)
 
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime? @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
 
   @@index([startDate, endDate])
   @@index([isActive])
@@ -237,13 +243,13 @@ model HolidayPeriod {
 
 // Optional season boundaries for reporting/archives
 model Season {
-  id        String   @id @default(uuid())
-  name      String   // e.g., "2025-2026"
-  startsAt  DateTime
-  endsAt    DateTime
-  isActive  Boolean  @default(true)
+  id       String   @id @default(uuid())
+  name     String // e.g., "2025-2026"
+  startsAt DateTime
+  endsAt   DateTime
+  isActive Boolean  @default(true)
 
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
   updatedAt DateTime? @updatedAt
 
   @@unique([name])
@@ -251,37 +257,41 @@ model Season {
 
 // Global config (singleton row) to avoid hard-coding cutoffs in code
 model AppSetting {
-  id                          Int       @id @default(1)
-  responseCutoffWeekday       Int       @default(5)  // 5 = Friday (ISO: Mon=1..Sun=7)
-  responseCutoffHourLocal     Int       @default(18) // 18:00 Europe/Paris
-  publishWeekday              Int       @default(6)  // 6 = Saturday
-  publishHourLocal            Int       @default(20) // 20:00 Europe/Paris
-  autogenWeekday              Int       @default(5)  // 5 = Friday
-  autogenHourLocal            Int       @default(0)  // 00:00 Europe/Paris
+  id                      Int @id @default(1)
+  responseCutoffWeekday   Int @default(5) // 5 = Friday (ISO: Mon=1..Sun=7)
+  responseCutoffHourLocal Int @default(18) // 18:00 Europe/Paris
+  publishWeekday          Int @default(6) // 6 = Saturday
+  publishHourLocal        Int @default(20) // 20:00 Europe/Paris
+  autogenWeekday          Int @default(5) // 5 = Friday
+  autogenHourLocal        Int @default(0) // 00:00 Europe/Paris
 
-  createdAt                   DateTime  @default(now())
-  updatedAt                   DateTime? @updatedAt
+  // Residence cutoff configuration
+  residenceCutoffHourLocal   Int @default(12) // noon
+  residenceCutoffMinuteLocal Int @default(0)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
 }
 
 // ---------- Tournaments ----------
 model Tournament {
-  id            String            @id @default(uuid())
+  id            String           @id @default(uuid())
   title         String
   type          TournamentType
-  status        TournamentStatus  @default(DRAFT)
-  pairingMethod PairingMethod?    @default(BALANCED)
+  status        TournamentStatus @default(DRAFT)
+  pairingMethod PairingMethod?   @default(BALANCED)
   addressLine1  String
   addressLine2  String?
   postalCode    String
   city          String
   country       String
-  latitude      Float?            // optional for future map
-  longitude     Float?            // optional for future map
+  latitude      Float? // optional for future map
+  longitude     Float? // optional for future map
   startsAt      DateTime
   endsAt        DateTime
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
-  
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
   participants TournamentParticipant[]
   teams        TournamentTeam[]
 
@@ -291,46 +301,46 @@ model Tournament {
 }
 
 model TournamentParticipant {
-  id            String               @id @default(uuid())
-  tournamentId  String
-  userId        String
-  status        ParticipationStatus  @default(PENDING) // RSVP
-  feedback      String?
-  rankSnapshot  Int?                 // frozen ranking at pairing time
-  seed          Int?                 // optional seeding position (1..N)
-  
-  tournament    Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
-  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id           String              @id @default(uuid())
+  tournamentId String
+  userId       String
+  status       ParticipationStatus @default(PENDING) // RSVP
+  feedback     String?
+  rankSnapshot Int? // frozen ranking at pairing time
+  seed         Int? // optional seeding position (1..N)
+
+  tournament      Tournament             @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  user            User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
   teamMemberships TournamentTeamMember[]
-  
+
   @@unique([tournamentId, userId])
   @@index([userId])
   @@index([tournamentId])
 }
 
 model TournamentTeam {
-  id            String    @id @default(uuid())
-  tournamentId  String
-  orderIndex    Int       // for manual reordering (drag & drop)
-  placement     Int?      // 1st, 2nd, 3rd... set at the end (team result)
-  locked        Boolean   @default(false) // locked teams preserved during regeneration
-  notes         String?   // free text for admin
-  
-  tournament    Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
-  members       TournamentTeamMember[]
-  
+  id           String  @id @default(uuid())
+  tournamentId String
+  orderIndex   Int // for manual reordering (drag & drop)
+  placement    Int? // 1st, 2nd, 3rd... set at the end (team result)
+  locked       Boolean @default(false) // locked teams preserved during regeneration
+  notes        String? // free text for admin
+
+  tournament Tournament             @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  members    TournamentTeamMember[]
+
   @@unique([tournamentId, orderIndex])
   @@index([tournamentId])
 }
 
 model TournamentTeamMember {
-  id               String          @id @default(uuid())
-  teamId           String
-  participantId    String
-  
-  team             TournamentTeam  @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  participant      TournamentParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
-  
+  id            String @id @default(uuid())
+  teamId        String
+  participantId String
+
+  team        TournamentTeam        @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  participant TournamentParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+
   @@unique([teamId, participantId])
   @@index([teamId])
   @@index([participantId])
@@ -338,19 +348,19 @@ model TournamentTeamMember {
 
 // ---------- Public Events ----------
 model PublicEvent {
-  id                     String   @id @default(uuid())
-  slug                   String   @unique
-  name                   String
-  description            String?  @db.Text
-  startTime              DateTime?
-  endTime                DateTime?
-  backgroundImageUrl     String?
+  id                      String    @id @default(uuid())
+  slug                    String    @unique
+  name                    String
+  description             String?   @db.Text
+  startTime               DateTime?
+  endTime                 DateTime?
+  backgroundImageUrl      String?
   externalRegistrationUrl String?
-  isPublished            Boolean  @default(false)
-  orderIndex             Int      @default(0)
+  isPublished             Boolean   @default(false)
+  orderIndex              Int       @default(0)
 
-  createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([isPublished, orderIndex])
   @@index([startTime])
@@ -362,12 +372,12 @@ model PublicEvent {
 model SocialTarget {
   id        String           @id @default(cuid())
   type      SocialTargetType
-  entityId  String           // ID of the underlying entity (e.g. Session.id, Tournament.id)
+  entityId  String // ID of the underlying entity (e.g. Session.id, Tournament.id)
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
 
-  likes     SocialLike[]
-  comments  SocialComment[]
+  likes    SocialLike[]
+  comments SocialComment[]
 
   @@unique([type, entityId])
 }
@@ -394,7 +404,50 @@ model SocialComment {
   updatedAt DateTime     @updatedAt
 
   // Optional: threaded comments (replies)
-  parent    SocialComment?  @relation("CommentReplies", fields: [parentId], references: [id])
-  parentId  String?
-  replies   SocialComment[] @relation("CommentReplies")
+  parent   SocialComment?  @relation("CommentReplies", fields: [parentId], references: [id])
+  parentId String?
+  replies  SocialComment[] @relation("CommentReplies")
+}
+
+// ---------- Residence (Manors & Night Stays) ----------
+model Manor {
+  id              String  @id @default(uuid())
+  name            String
+  address         String?
+  city            String?
+  capacity        Int     @default(0) // max beds
+  enforceCapacity Boolean @default(true)
+  isActive        Boolean @default(true)
+
+  stays ResidenceStay[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([name])
+  @@index([isActive])
+}
+
+model ResidenceStay {
+  id      String              @id @default(uuid())
+  manorId String
+  userId  String
+  date    DateTime // local day normalized (UTC midnight)
+  status  ResidenceStayStatus @default(PLANNED)
+
+  // useful for admin reporting if enforceCapacity=false
+  overCapacity Boolean @default(false)
+
+  // audit
+  createdByAdmin Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  manor Manor @relation(fields: [manorId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([manorId, userId, date])
+  @@index([date])
+  @@index([manorId, date])
+  @@index([userId, date])
 }
