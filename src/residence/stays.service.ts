@@ -92,8 +92,10 @@ export class StaysService {
     if (!isAdmin) {
       const beforeCutoff = await this.timeService.isBeforeCutoff(dto.date);
       if (!beforeCutoff) {
+        const cutoffInstant = await this.timeService.cutoffInstant(dto.date);
+        const cutoffTime = cutoffInstant.toFormat('HH:mm');
         throw new ForbiddenException(
-          'Cannot register after cutoff time (12:00 Europe/Paris on the same day)',
+          `Cannot register after cutoff time (${cutoffTime} Europe/Paris on the same day)`,
         );
       }
     }
@@ -168,8 +170,10 @@ export class StaysService {
     if (!isAdmin) {
       const beforeCutoff = await this.timeService.isBeforeCutoff(dto.date);
       if (!beforeCutoff) {
+        const cutoffInstant = await this.timeService.cutoffInstant(dto.date);
+        const cutoffTime = cutoffInstant.toFormat('HH:mm');
         throw new ForbiddenException(
-          'Cannot cancel after cutoff time (12:00 Europe/Paris on the same day)',
+          `Cannot cancel after cutoff time (${cutoffTime} Europe/Paris on the same day)`,
         );
       }
     }

@@ -185,7 +185,8 @@ export class ResidenceRepository {
       });
 
       if (!manor) {
-        throw new Error('Manor not found');
+        const { NotFoundException } = await import('@nestjs/common');
+        throw new NotFoundException('Manor not found');
       }
 
       // Count planned stays

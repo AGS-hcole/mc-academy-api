@@ -249,7 +249,7 @@ describe('Residence Endpoints (e2e)', () => {
     it('should fail with invalid date format', async () => {
       const stayData = {
         manorId: testManorId,
-        date: '2026/01/14', // Wrong format
+        date: 'invalid-date', // Wrong format
       };
 
       await request(app.getHttpServer())

@@ -71,6 +71,9 @@ export class ResidenceTimeService {
 
   /**
    * Validate YYYY-MM-DD format
+   * Uses both regex and Luxon validation to ensure:
+   * 1. String format matches pattern (quick check)
+   * 2. Date is actually valid (e.g., not 2026-02-30)
    */
   isValidDateFormat(dateStr: string): boolean {
     const regex = /^\d{4}-\d{2}-\d{2}$/;
