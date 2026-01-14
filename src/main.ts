@@ -52,7 +52,7 @@ export async function bootstrap() {
   app.use(new IpRestrictionMiddleware().use);
 
   // Call the seed script
-  await seedDatabase();
+  //await seedDatabase();
 
   await app.listen(3000);
   Logger.log(`App running on Port 3000`);
