@@ -51,13 +51,17 @@ export class TransportTemplatesController {
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update a transport template (ADMIN only)' })
-  update(@Param('id') id: string, @Body() updateDto: UpdateTransportTemplateDto) {
+  update(
+    @Param('id') id: string,
+    @Body() updateDto: UpdateTransportTemplateDto,
+  ) {
     return this.templatesService.update(id, updateDto);
   }
 
   @Delete(':id')
   @ApiOperation({
-    summary: 'Soft delete a transport template by setting isActive to false (ADMIN only)',
+    summary:
+      'Soft delete a transport template by setting isActive to false (ADMIN only)',
   })
   remove(@Param('id') id: string) {
     return this.templatesService.remove(id);

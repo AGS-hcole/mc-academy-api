@@ -36,7 +36,8 @@ export class TransportOccurrencesController {
   @UseGuards(AuthGuard)
   @ApiOperation({
     summary: 'List transport occurrences (AUTH required)',
-    description: 'Get all transport occurrences within a date range with booking information',
+    description:
+      'Get all transport occurrences within a date range with booking information',
   })
   @ApiResponse({ status: 200, description: 'List of occurrences' })
   findAll(@Query() query: ListOccurrencesQueryDto) {
@@ -47,7 +48,8 @@ export class TransportOccurrencesController {
   @UseGuards(AuthGuard)
   @ApiOperation({
     summary: 'Get a transport occurrence by ID (AUTH required)',
-    description: 'Returns occurrence details including user\'s booking status. Admins see all bookings.',
+    description:
+      "Returns occurrence details including user's booking status. Admins see all bookings.",
   })
   @ApiResponse({ status: 200, description: 'Occurrence details' })
   @ApiResponse({ status: 404, description: 'Occurrence not found' })
@@ -60,10 +62,14 @@ export class TransportOccurrencesController {
   @UseGuards(AuthGuard)
   @ApiOperation({
     summary: 'Book a transport occurrence (AUTH required)',
-    description: 'Create a booking for a transport. Validates cutoff time and capacity.',
+    description:
+      'Create a booking for a transport. Validates cutoff time and capacity.',
   })
   @ApiResponse({ status: 201, description: 'Booking created successfully' })
-  @ApiResponse({ status: 400, description: 'Cutoff passed or not enough seats' })
+  @ApiResponse({
+    status: 400,
+    description: 'Cutoff passed or not enough seats',
+  })
   @ApiResponse({ status: 404, description: 'Occurrence not found' })
   @ApiResponse({ status: 409, description: 'Booking already exists' })
   book(

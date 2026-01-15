@@ -1,9 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import {
-  CreateTransportTemplateDto,
-  UpdateTransportTemplateDto,
-} from './dto';
+import { CreateTransportTemplateDto, UpdateTransportTemplateDto } from './dto';
 
 @Injectable()
 export class TransportTemplatesService {

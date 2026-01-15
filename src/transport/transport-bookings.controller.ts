@@ -20,10 +20,14 @@ export class TransportBookingsController {
   @Post(':id/cancel')
   @ApiOperation({
     summary: 'Cancel a transport booking (AUTH required)',
-    description: 'Users can cancel their own bookings. Admins can cancel any booking.',
+    description:
+      'Users can cancel their own bookings. Admins can cancel any booking.',
   })
   @ApiResponse({ status: 200, description: 'Booking cancelled successfully' })
-  @ApiResponse({ status: 403, description: 'Not authorized to cancel this booking' })
+  @ApiResponse({
+    status: 403,
+    description: 'Not authorized to cancel this booking',
+  })
   @ApiResponse({ status: 404, description: 'Booking not found' })
   cancel(@Param('id') id: string, @GetUser() user: User) {
     const isAdmin = user.role === 'admin';

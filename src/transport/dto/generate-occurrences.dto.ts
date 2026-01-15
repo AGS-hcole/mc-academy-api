@@ -1,4 +1,4 @@
-import { IsDateString, IsString } from 'class-validator';
+import { IsDateString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class GenerateOccurrencesDto {

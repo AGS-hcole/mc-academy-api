@@ -71,9 +71,7 @@ export class ResidenceRepository {
           gte: fromDate,
           lte: toDate,
         },
-        status: includeCanceled
-          ? undefined
-          : ResidenceStayStatus.PLANNED,
+        status: includeCanceled ? undefined : ResidenceStayStatus.PLANNED,
       },
       include: {
         manor: true,
@@ -178,7 +176,7 @@ export class ResidenceRepository {
     createdByAdmin: boolean,
     force: boolean,
   ): Promise<{ stay: ResidenceStay; overCapacity: boolean }> {
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async tx => {
       // Get manor
       const manor = await tx.manor.findUnique({
         where: { id: manorId },

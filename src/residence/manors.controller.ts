@@ -37,7 +37,10 @@ export class ManorsController {
     description: 'Filter by active status',
   })
   @ApiResponse({ status: 200, description: 'List of manors' })
-  async findAll(@Query('activeOnly', new ParseBoolPipe({ optional: true })) activeOnly?: boolean) {
+  async findAll(
+    @Query('activeOnly', new ParseBoolPipe({ optional: true }))
+    activeOnly?: boolean,
+  ) {
     return this.manorsService.findAll(activeOnly);
   }
 

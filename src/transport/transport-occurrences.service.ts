@@ -30,7 +30,9 @@ export class TransportOccurrencesService {
     const toDate = parseDate(dto.toDate);
 
     if (fromDate > toDate) {
-      throw new BadRequestException('fromDate must be before or equal to toDate');
+      throw new BadRequestException(
+        'fromDate must be before or equal to toDate',
+      );
     }
 
     // Get template
@@ -39,11 +41,15 @@ export class TransportOccurrencesService {
     });
 
     if (!template) {
-      throw new NotFoundException(`Transport template with ID ${templateId} not found`);
+      throw new NotFoundException(
+        `Transport template with ID ${templateId} not found`,
+      );
     }
 
     if (!template.isActive) {
-      throw new BadRequestException('Cannot generate occurrences for inactive template');
+      throw new BadRequestException(
+        'Cannot generate occurrences for inactive template',
+      );
     }
 
     const occurrences = [];
@@ -137,7 +143,7 @@ export class TransportOccurrencesService {
     });
 
     // Calculate booked and available seats
-    return occurrences.map((occurrence) => {
+    return occurrences.map(occurrence => {
       const bookedSeats = occurrence.bookings.reduce(
         (sum, booking) => sum + booking.seats,
         0,
@@ -185,7 +191,9 @@ export class TransportOccurrencesService {
     });
 
     if (!occurrence) {
-      throw new NotFoundException(`Transport occurrence with ID ${id} not found`);
+      throw new NotFoundException(
+        `Transport occurrence with ID ${id} not found`,
+      );
     }
 
     const bookedSeats = occurrence.bookings.reduce(
@@ -198,7 +206,7 @@ export class TransportOccurrencesService {
 
     // Find user's booking if userId is provided
     const myBooking = userId
-      ? occurrence.bookings.find((b) => b.userId === userId)
+      ? occurrence.bookings.find(b => b.userId === userId)
       : undefined;
 
     const result: any = {
@@ -226,7 +234,7 @@ export class TransportOccurrencesService {
 
     // Include all bookings if admin
     if (isAdmin) {
-      result.bookings = occurrence.bookings.map((b) => ({
+      result.bookings = occurrence.bookings.map(b => ({
         id: b.id,
         seats: b.seats,
         status: b.status,
@@ -242,7 +250,7 @@ export class TransportOccurrencesService {
     const seats = dto.seats ?? 1;
 
     // Use transaction to prevent race conditions
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async tx => {
       // Get occurrence with lock
       const occurrence = await tx.transportOccurrence.findUnique({
         where: { id: occurrenceId },
@@ -266,7 +274,9 @@ export class TransportOccurrencesService {
       }
 
       // Check cutoff
-      if (!isBeforeCutoff(occurrence.departureAt, occurrence.template.timezone)) {
+      if (
+        !isBeforeCutoff(occurrence.departureAt, occurrence.template.timezone)
+      ) {
         throw new BadRequestException(
           'Booking deadline has passed. Bookings must be made before midnight on the day of transport.',
         );
@@ -283,7 +293,9 @@ export class TransportOccurrencesService {
       });
 
       if (existingBooking) {
-        throw new ConflictException('You already have a booking for this transport');
+        throw new ConflictException(
+          'You already have a booking for this transport',
+        );
       }
 
       // Calculate current booked seats
@@ -326,7 +338,9 @@ export class TransportOccurrencesService {
     });
 
     if (!occurrence) {
-      throw new NotFoundException(`Transport occurrence with ID ${id} not found`);
+      throw new NotFoundException(
+        `Transport occurrence with ID ${id} not found`,
+      );
     }
 
     return this.prisma.transportOccurrence.update({
