@@ -6,9 +6,15 @@ Le module Transport permet de gérer des trajets récurrents (templates) qui gé
 
 ## Génération automatique des occurrences
 
-**Une tâche planifiée (cron) génère automatiquement les occurrences :**
+Le système génère automatiquement les occurrences de transport de deux manières :
+
+### 1. À la création du template
+- **Automatique** : Lors de la création d'un template actif (`isActive=true`), le système génère immédiatement les occurrences pour les **30 prochains jours**
+- **Réponse enrichie** : La réponse de création inclut le nombre d'occurrences générées
+
+### 2. Tâche planifiée quotidienne (cron)
 - **Fréquence** : Tous les jours à 00:30 (heure Europe/Paris)
-- **Période** : Génère les occurrences pour les 30 prochains jours
+- **Période** : Maintient une fenêtre glissante de 30 jours
 - **Traitement** : Pour chaque template actif (`isActive=true`)
 - **Idempotence** : La génération utilise `upsert`, donc sans danger de doublons
 
@@ -101,7 +107,15 @@ Content-Type: application/json
   "daysOfWeek": [1, 3, 5],
   "timeOfDay": "14:50",
   "createdAt": "2026-01-15T14:30:00.000Z",
-  "updatedAt": "2026-01-15T14:30:00.000Z"
+  "updatedAt": "2026-01-15T14:30:00.000Z",
+  "initialOccurrencesGenerated": 13
+}
+```
+
+**Notes importantes :**
+- Le champ `initialOccurrencesGenerated` indique le nombre d'occurrences créées automatiquement (30 prochains jours)
+- Si le template est créé avec `isActive=false`, aucune occurrence n'est générée
+- La génération est idempotente : vous pouvez toujours régénérer manuellement via l'endpoint `/generate`
 }
 ```
 

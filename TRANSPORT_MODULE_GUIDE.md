@@ -6,9 +6,15 @@ The Transport module provides functionality for managing recurring transport rou
 
 ## Automatic Occurrence Generation
 
-**A scheduled task (cron job) automatically generates occurrences:**
+The system automatically generates transport occurrences in two ways:
+
+### 1. On Template Creation
+- **Automatic**: When creating an active template (`isActive=true`), the system immediately generates occurrences for the **next 30 days**
+- **Enhanced Response**: The creation response includes the number of occurrences generated
+
+### 2. Daily Scheduled Task (Cron Job)
 - **Frequency**: Daily at 00:30 (Europe/Paris timezone)
-- **Period**: Generates occurrences for the next 30 days
+- **Period**: Maintains a rolling 30-day window
 - **Processing**: For each active template (`isActive=true`)
 - **Idempotence**: Generation uses `upsert`, so it's safe from duplicates
 

@@ -8,6 +8,7 @@ import {
   Delete,
   UseGuards,
   Query,
+  Logger,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { TransportTemplatesService } from './transport-templates.service';
@@ -18,12 +19,15 @@ import {
   GenerateOccurrencesDto,
 } from './dto';
 import { AdminGuard } from '../auth/guards/admin.guard';
+import { DateTime } from 'luxon';
 
 @ApiTags('transport-templates')
 @ApiBearerAuth()
 @Controller('transport-templates')
 @UseGuards(AdminGuard)
 export class TransportTemplatesController {
+  private readonly logger = new Logger(TransportTemplatesController.name);
+
   constructor(
     private readonly templatesService: TransportTemplatesService,
     private readonly occurrencesService: TransportOccurrencesService,
@@ -31,8 +35,45 @@ export class TransportTemplatesController {
 
   @Post()
   @ApiOperation({ summary: 'Create a new transport template (ADMIN only)' })
-  create(@Body() createDto: CreateTransportTemplateDto) {
-    return this.templatesService.create(createDto);
+  async create(@Body() createDto: CreateTransportTemplateDto) {
+    // Create the template
+    const template = await this.templatesService.create(createDto);
+
+    // Automatically generate initial occurrences for the next 30 days if template is active
+    if (template.isActive) {
+      try {
+        const now = DateTime.now().setZone(template.timezone);
+        const fromDate = now.toFormat('yyyy-MM-dd');
+        const toDate = now.plus({ days: 30 }).toFormat('yyyy-MM-dd');
+
+        const result = await this.occurrencesService.generateForTemplate(
+          template.id,
+          { fromDate, toDate },
+        );
+
+        this.logger.log(
+          `Template créé: "${template.name}" avec ${result.generated} occurrence(s) initiale(s)`,
+        );
+
+        // Return template with generation info
+        return {
+          ...template,
+          initialOccurrencesGenerated: result.generated,
+        };
+      } catch (error) {
+        this.logger.error(
+          `Erreur lors de la génération des occurrences initiales: ${error.message}`,
+        );
+        // Return template even if occurrence generation fails
+        return {
+          ...template,
+          initialOccurrencesGenerated: 0,
+          generationError: error.message,
+        };
+      }
+    }
+
+    return template;
   }
 
   @Get()
