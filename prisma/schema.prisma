@@ -77,6 +77,21 @@ enum ResidenceStayStatus {
   CANCELED // user/admin removed before day ends
 }
 
+enum TransportRecurrenceType {
+  NONE
+  WEEKLY
+}
+
+enum TransportOccurrenceStatus {
+  SCHEDULED
+  CANCELLED
+}
+
+enum TransportBookingStatus {
+  CONFIRMED
+  CANCELLED
+}
+
 // ---------- Core ----------
 model User {
   id   String @id @default(uuid())
@@ -123,6 +138,7 @@ model User {
   socialLikes            SocialLike[]
   socialComments         SocialComment[]
   residenceStays         ResidenceStay[]
+  transportBookings      TransportBooking[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime? @updatedAt
@@ -450,4 +466,82 @@ model ResidenceStay {
   @@index([date])
   @@index([manorId, date])
   @@index([userId, date])
+}
+
+// ---------- Transport ----------
+model TransportTemplate {
+  id          String  @id @default(uuid())
+  name        String
+  description String?
+
+  // Origin
+  fromLabel   String
+  fromAddress String?
+  fromLat     Float?
+  fromLng     Float?
+
+  // Destination
+  toLabel   String
+  toAddress String?
+  toLat     Float?
+  toLng     Float?
+
+  // Configuration
+  timezone      String  @default("Europe/Paris")
+  capacity      Int     @default(4)
+  allowOverbook Boolean @default(false)
+  isActive      Boolean @default(true)
+
+  // Recurrence (weekly schedule)
+  recurrenceType TransportRecurrenceType @default(WEEKLY)
+  daysOfWeek     Int[] // 1-7 (Mon=1, Sun=7)
+  timeOfDay      String // HH:mm format
+
+  occurrences TransportOccurrence[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+}
+
+model TransportOccurrence {
+  id          String   @id @default(uuid())
+  templateId  String
+  departureAt DateTime // exact date/time
+
+  // Snapshot values from template
+  capacitySnapshot      Int
+  allowOverbookSnapshot Boolean
+
+  status       TransportOccurrenceStatus @default(SCHEDULED)
+  cancelReason String?
+
+  template TransportTemplate  @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  bookings TransportBooking[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+
+  @@unique([templateId, departureAt])
+  @@index([departureAt])
+  @@index([templateId])
+  @@index([status])
+}
+
+model TransportBooking {
+  id           String                 @id @default(uuid())
+  occurrenceId String
+  userId       String
+  seats        Int                    @default(1)
+  status       TransportBookingStatus @default(CONFIRMED)
+
+  occurrence TransportOccurrence @relation(fields: [occurrenceId], references: [id], onDelete: Cascade)
+  user       User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+
+  @@unique([occurrenceId, userId])
+  @@index([occurrenceId])
+  @@index([userId])
+  @@index([status])
 }
