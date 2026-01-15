@@ -135,8 +135,10 @@ export class TransportOccurrencesService {
         bookings: {
           where: { status: 'CONFIRMED' },
           select: {
+            id: true,
             seats: true,
             userId: true,
+            status: true,
           },
         },
       },
