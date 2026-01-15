@@ -16,7 +16,3 @@ export class GenerateOccurrencesDto {
   @IsDateString()
   toDate: string;
 }
-
-export class ValidateGenerateOccurrencesDto extends GenerateOccurrencesDto {
-  // Additional validation that fromDate <= toDate will be done in service
-}

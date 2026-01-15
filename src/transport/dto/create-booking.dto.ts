@@ -12,5 +12,5 @@ export class CreateBookingDto {
   @IsInt()
   @Min(1)
   @Max(10)
-  seats?: number = 1;
+  seats?: number;
 }

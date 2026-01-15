@@ -4,6 +4,7 @@ import {
   IsInt,
   IsBoolean,
   IsArray,
+  IsNumber,
   Min,
   Max,
   ArrayMinSize,
@@ -34,12 +35,12 @@ export class CreateTransportTemplateDto {
 
   @ApiPropertyOptional({ description: 'Origin latitude' })
   @IsOptional()
-  @IsInt()
+  @IsNumber()
   fromLat?: number;
 
   @ApiPropertyOptional({ description: 'Origin longitude' })
   @IsOptional()
-  @IsInt()
+  @IsNumber()
   fromLng?: number;
 
   @ApiProperty({ description: 'Destination label (e.g., "Bordeaux St-Jean")' })
@@ -53,12 +54,12 @@ export class CreateTransportTemplateDto {
 
   @ApiPropertyOptional({ description: 'Destination latitude' })
   @IsOptional()
-  @IsInt()
+  @IsNumber()
   toLat?: number;
 
   @ApiPropertyOptional({ description: 'Destination longitude' })
   @IsOptional()
-  @IsInt()
+  @IsNumber()
   toLng?: number;
 
   @ApiPropertyOptional({
