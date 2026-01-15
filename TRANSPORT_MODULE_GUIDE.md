@@ -4,6 +4,16 @@
 
 The Transport module provides functionality for managing recurring transport routes (templates) and individual transport occurrences that users can book.
 
+## Automatic Occurrence Generation
+
+**A scheduled task (cron job) automatically generates occurrences:**
+- **Frequency**: Daily at 00:30 (Europe/Paris timezone)
+- **Period**: Generates occurrences for the next 30 days
+- **Processing**: For each active template (`isActive=true`)
+- **Idempotence**: Generation uses `upsert`, so it's safe from duplicates
+
+Administrators can also manually generate occurrences via the dedicated endpoint (see section below).
+
 ## Architecture
 
 ### Models

@@ -4,6 +4,16 @@
 
 Le module Transport permet de gérer des trajets récurrents (templates) qui génèrent des occurrences de transport que les utilisateurs peuvent réserver.
 
+## Génération automatique des occurrences
+
+**Une tâche planifiée (cron) génère automatiquement les occurrences :**
+- **Fréquence** : Tous les jours à 00:30 (heure Europe/Paris)
+- **Période** : Génère les occurrences pour les 30 prochains jours
+- **Traitement** : Pour chaque template actif (`isActive=true`)
+- **Idempotence** : La génération utilise `upsert`, donc sans danger de doublons
+
+Les administrateurs peuvent également générer manuellement des occurrences via l'endpoint dédié (voir section 1.6).
+
 ## Règles métier importantes
 
 ### Deadline de réservation
