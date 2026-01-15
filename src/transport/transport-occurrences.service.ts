@@ -294,10 +294,45 @@ export class TransportOccurrencesService {
         },
       });
 
+      // If booking exists, update it to CONFIRMED (allows re-registration after cancellation)
       if (existingBooking) {
-        throw new ConflictException(
-          'You already have a booking for this transport',
+        // If already confirmed, throw conflict
+        if (existingBooking.status === 'CONFIRMED') {
+          throw new ConflictException(
+            'You already have a confirmed booking for this transport',
+          );
+        }
+
+        // Calculate current booked seats (excluding the existing cancelled booking)
+        const currentBookedSeats = occurrence.bookings.reduce(
+          (sum, booking) => sum + booking.seats,
+          0,
         );
+
+        // Check capacity if overbooking is not allowed
+        if (!occurrence.allowOverbookSnapshot) {
+          if (currentBookedSeats + seats > occurrence.capacitySnapshot) {
+            throw new BadRequestException(
+              `Not enough seats available. Requested: ${seats}, Available: ${occurrence.capacitySnapshot - currentBookedSeats}`,
+            );
+          }
+        }
+
+        // Update existing booking to CONFIRMED
+        return tx.transportBooking.update({
+          where: { id: existingBooking.id },
+          data: {
+            seats,
+            status: 'CONFIRMED',
+          },
+          include: {
+            occurrence: {
+              include: {
+                template: true,
+              },
+            },
+          },
+        });
       }
 
       // Calculate current booked seats
@@ -315,7 +350,7 @@ export class TransportOccurrencesService {
         }
       }
 
-      // Create booking
+      // Create new booking
       return tx.transportBooking.create({
         data: {
           occurrenceId,

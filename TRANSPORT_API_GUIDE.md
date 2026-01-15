@@ -425,19 +425,25 @@ Content-Type: application/json
   }
   ```
 
-- **409 Conflict** : Réservation déjà existante
+- **409 Conflict** : Réservation confirmée déjà existante
   ```json
   {
     "statusCode": 409,
-    "message": "You already have a booking for this transport"
+    "message": "You already have a confirmed booking for this transport"
   }
   ```
 
 **Validations effectuées :**
 1. L'occurrence existe et n'est pas annulée
 2. La deadline n'est pas dépassée (avant 00:00 le jour du transport)
-3. L'utilisateur n'a pas déjà une réservation pour cette occurrence
-4. Capacité suffisante (si `allowOverbook=false`)
+3. Si une réservation confirmée existe déjà pour cette occurrence : erreur 409
+4. Si une réservation annulée existe : elle est réactivée avec le statut CONFIRMED
+5. Capacité suffisante (si `allowOverbook=false`)
+
+**Comportement de réinscription :**
+- Si vous avez annulé une réservation, vous pouvez vous réinscrire en appelant à nouveau cet endpoint
+- Votre ancienne réservation sera automatiquement réactivée avec le statut CONFIRMED
+- Le nombre de places peut être modifié lors de la réinscription
 
 ---
 
@@ -623,7 +629,7 @@ Le champ `timeOfDay` utilise le format 24 heures : **HH:mm**
 | 400 | Bad Request | Erreur de validation, deadline dépassée, capacité insuffisante |
 | 403 | Forbidden | Accès interdit (pas admin ou pas propriétaire) |
 | 404 | Not Found | Ressource introuvable |
-| 409 | Conflict | Conflit (réservation déjà existante) |
+| 409 | Conflict | Conflit (réservation confirmée déjà existante) |
 
 ---
 
