@@ -136,6 +136,7 @@ export class TransportOccurrencesService {
           where: { status: 'CONFIRMED' },
           select: {
             seats: true,
+            userId: true,
           },
         },
       },
@@ -164,6 +165,7 @@ export class TransportOccurrencesService {
         updatedAt: occurrence.updatedAt,
         template: occurrence.template,
         bookedSeats,
+        bookings: occurrence.bookings,
         availableSeats,
       };
     });
