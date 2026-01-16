@@ -98,7 +98,9 @@ describe('Residence Endpoints (e2e)', () => {
   afterAll(async () => {
     // Clean up
     if (testManorId) {
-      await prisma.residenceStay.deleteMany({ where: { manorId: testManorId } });
+      await prisma.residenceStay.deleteMany({
+        where: { manorId: testManorId },
+      });
       await prisma.manor.delete({ where: { id: testManorId } });
     }
     await prisma.user.delete({ where: { id: testUserId } });
@@ -230,7 +232,7 @@ describe('Residence Endpoints (e2e)', () => {
         .toFormat('yyyy-MM-dd');
 
       const now = DateTime.now().setZone('Europe/Paris');
-      
+
       // Only test if after cutoff (12:00)
       if (now.hour >= 12) {
         const stayData = {
@@ -333,7 +335,9 @@ describe('Residence Endpoints (e2e)', () => {
     });
 
     afterAll(async () => {
-      await prisma.residenceStay.deleteMany({ where: { manorId: smallManorId } });
+      await prisma.residenceStay.deleteMany({
+        where: { manorId: smallManorId },
+      });
       await prisma.manor.delete({ where: { id: smallManorId } });
     });
 
@@ -381,7 +385,12 @@ describe('Residence Endpoints (e2e)', () => {
       await request(app.getHttpServer())
         .post('/api/residence/stays')
         .set('Authorization', `Bearer ${adminAccessToken}`)
-        .send({ manorId: smallManorId, userId: user2.id, date: futureDate, force: true })
+        .send({
+          manorId: smallManorId,
+          userId: user2.id,
+          date: futureDate,
+          force: true,
+        })
         .expect(201);
 
       // Clean up

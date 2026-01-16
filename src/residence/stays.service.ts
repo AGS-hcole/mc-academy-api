@@ -49,7 +49,7 @@ export class StaysService {
     );
 
     // Format response
-    return stays.map((stay) => ({
+    return stays.map(stay => ({
       id: stay.id,
       date: this.timeService.formatDateParis(stay.date),
       status: stay.status,
@@ -232,12 +232,12 @@ export class StaysService {
     );
 
     const plannedStays = stays.filter(
-      (s) => s.status === ResidenceStayStatus.PLANNED,
+      s => s.status === ResidenceStayStatus.PLANNED,
     );
     const canceledStays = stays.filter(
-      (s) => s.status === ResidenceStayStatus.CANCELED,
+      s => s.status === ResidenceStayStatus.CANCELED,
     );
-    const overCapacityCount = plannedStays.filter((s) => s.overCapacity).length;
+    const overCapacityCount = plannedStays.filter(s => s.overCapacity).length;
 
     return {
       manor: {
@@ -252,7 +252,7 @@ export class StaysService {
         canceled: canceledStays.length,
         overCapacity: overCapacityCount,
       },
-      stays: stays.map((stay) => ({
+      stays: stays.map(stay => ({
         id: stay.id,
         status: stay.status,
         overCapacity: stay.overCapacity,

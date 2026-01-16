@@ -19,6 +19,7 @@ import { RatingsModule } from './ratings/ratings.module';
 import { EventsModule } from './events/events.module';
 import { SocialModule } from './social/social.module';
 import { ResidenceModule } from './residence/residence.module';
+import { TransportModule } from './transport/transport.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { ResidenceModule } from './residence/residence.module';
     EventsModule,
     SocialModule,
     ResidenceModule,
+    TransportModule,
   ],
   controllers: [AppController],
   providers: [AppService],

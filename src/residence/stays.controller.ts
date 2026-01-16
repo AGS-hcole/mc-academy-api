@@ -103,7 +103,10 @@ export class StaysController {
     type: String,
     description: 'Manor ID',
   })
-  @ApiResponse({ status: 200, description: 'Stays report with occupancy summary' })
+  @ApiResponse({
+    status: 200,
+    description: 'Stays report with occupancy summary',
+  })
   @ApiResponse({ status: 400, description: 'Invalid date format' })
   @ApiResponse({ status: 404, description: 'Manor not found' })
   async getManorStaysReport(
