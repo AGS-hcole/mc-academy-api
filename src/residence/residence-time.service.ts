@@ -17,17 +17,22 @@ export class ResidenceTimeService {
 
   /**
    * Parse a local date string (YYYY-MM-DD) as a DateTime in Europe/Paris at 00:00
+   * Used only for local business rules such as cutoff checks.
    */
   parseLocalDate(dateStr: string): DateTime {
-    return DateTime.fromFormat(dateStr, 'yyyy-MM-dd', { zone: PARIS_TZ });
+    return DateTime.fromFormat(dateStr, 'yyyy-MM-dd', {
+      zone: PARIS_TZ,
+    }).startOf('day');
   }
 
   /**
-   * Convert a local date string (YYYY-MM-DD) to UTC midnight Date for DB storage
+   * Convert a YYYY-MM-DD string to a UTC date-only value for DB storage.
+   * Example: 2026-04-03 -> 2026-04-03T00:00:00.000Z
    */
-  localDateToUtcMidnight(dateStr: string): Date {
-    const localDate = this.parseLocalDate(dateStr);
-    return localDate.toUTC().toJSDate();
+  dateStringToUtcDateOnly(dateStr: string): Date {
+    const [year, month, day] = dateStr.split('-').map(Number);
+
+    return new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
   }
 
   /**
@@ -44,6 +49,7 @@ export class ResidenceTimeService {
     }
 
     const localDate = this.parseLocalDate(dateStr);
+
     return localDate.set({
       hour: settings.residenceCutoffHourLocal,
       minute: settings.residenceCutoffMinuteLocal,
@@ -62,24 +68,26 @@ export class ResidenceTimeService {
   }
 
   /**
-   * Format a Date object to YYYY-MM-DD string in Paris timezone
+   * Format a UTC date-only DB value to YYYY-MM-DD
    */
-  formatDateParis(date: Date): string {
-    const dt = DateTime.fromJSDate(date).setZone(PARIS_TZ);
-    return dt.toFormat('yyyy-MM-dd');
+  formatUtcDateOnly(date: Date): string {
+    const year = date.getUTCFullYear();
+    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(date.getUTCDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
   }
 
   /**
    * Validate YYYY-MM-DD format
-   * Uses both regex and Luxon validation to ensure:
-   * 1. String format matches pattern (quick check)
-   * 2. Date is actually valid (e.g., not 2026-02-30)
    */
   isValidDateFormat(dateStr: string): boolean {
     const regex = /^\d{4}-\d{2}-\d{2}$/;
+
     if (!regex.test(dateStr)) {
       return false;
     }
+
     const dt = this.parseLocalDate(dateStr);
     return dt.isValid;
   }

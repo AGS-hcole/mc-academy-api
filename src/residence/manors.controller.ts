@@ -20,6 +20,7 @@ import {
 import { ManorsService } from './manors.service';
 import { CreateManorDto, UpdateManorDto } from './dto';
 import { AdminGuard } from '../auth/guards/admin.guard';
+import { AuthGuard } from 'src/auth/guards/auth.guards';
 
 @ApiTags('residence/manors')
 @ApiBearerAuth()
@@ -28,8 +29,8 @@ export class ManorsController {
   constructor(private readonly manorsService: ManorsService) {}
 
   @Get()
-  @UseGuards(AdminGuard)
-  @ApiOperation({ summary: 'Get all manors (Admin only)' })
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Get all manors (All users)' })
   @ApiQuery({
     name: 'activeOnly',
     required: false,
@@ -41,7 +42,14 @@ export class ManorsController {
     @Query('activeOnly', new ParseBoolPipe({ optional: true }))
     activeOnly?: boolean,
   ) {
-    return this.manorsService.findAll(activeOnly);
+    const resolvedActiveOnly = activeOnly ?? true;
+
+    // Optionnel (si tu veux empêcher les users de voir les inactifs)
+    // if (resolvedActiveOnly === false && !user.isAdmin) {
+    //   throw new ForbiddenException();
+    // }
+
+    return this.manorsService.findAll(resolvedActiveOnly);
   }
 
   @Get(':id')

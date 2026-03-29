@@ -35,10 +35,10 @@ export class StaysService {
     }
 
     const fromDateObj = fromDate
-      ? this.timeService.localDateToUtcMidnight(fromDate)
+      ? this.timeService.dateStringToUtcDateOnly(fromDate)
       : undefined;
     const toDateObj = toDate
-      ? this.timeService.localDateToUtcMidnight(toDate)
+      ? this.timeService.dateStringToUtcDateOnly(toDate)
       : undefined;
 
     const stays = await this.repository.findStaysByUser(
@@ -51,7 +51,7 @@ export class StaysService {
     // Format response
     return stays.map(stay => ({
       id: stay.id,
-      date: this.timeService.formatDateParis(stay.date),
+      date: this.timeService.formatUtcDateOnly(stay.date),
       status: stay.status,
       overCapacity: stay.overCapacity,
       manor: {
@@ -110,7 +110,7 @@ export class StaysService {
       throw new BadRequestException('Manor is not active');
     }
 
-    const dateObj = this.timeService.localDateToUtcMidnight(dto.date);
+    const dateObj = this.timeService.dateStringToUtcDateOnly(dto.date);
     const force = isAdmin && dto.force === true;
 
     try {
@@ -178,7 +178,7 @@ export class StaysService {
       }
     }
 
-    const dateObj = this.timeService.localDateToUtcMidnight(dto.date);
+    const dateObj = this.timeService.dateStringToUtcDateOnly(dto.date);
 
     // Check if stay exists
     const existingStay = await this.repository.findStay(
@@ -225,7 +225,7 @@ export class StaysService {
       throw new NotFoundException('Manor not found');
     }
 
-    const dateObj = this.timeService.localDateToUtcMidnight(date);
+    const dateObj = this.timeService.dateStringToUtcDateOnly(date);
     const stays = await this.repository.findStaysByManorAndDate(
       manorId,
       dateObj,
