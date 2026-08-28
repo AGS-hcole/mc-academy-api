@@ -17,6 +17,7 @@ datasource db {
 enum Role {
   user
   admin
+  parent
 }
 
 enum SessionSlot {
@@ -139,6 +140,7 @@ model User {
   socialComments         SocialComment[]
   residenceStays         ResidenceStay[]
   transportBookings      TransportBooking[]
+  parentPlayers          ParentPlayer[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime? @updatedAt
@@ -544,4 +546,33 @@ model TransportBooking {
   @@index([occurrenceId])
   @@index([userId])
   @@index([status])
+}
+
+// ---------- Parent / Player ----------
+model Player {
+  id        String   @id @default(uuid())
+  userId    String?  @unique // optional: the player's own user account
+  firstname String
+  lastname  String
+  birthDate DateTime?
+
+  parentPlayers ParentPlayer[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+
+  @@index([lastname, firstname])
+}
+
+model ParentPlayer {
+  parentUserId String
+  playerId     String
+  createdAt    DateTime @default(now())
+
+  parent User   @relation(fields: [parentUserId], references: [id], onDelete: Cascade)
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([parentUserId, playerId])
+  @@index([parentUserId])
+  @@index([playerId])
 }

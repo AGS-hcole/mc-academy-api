@@ -90,6 +90,16 @@ export class UserService {
         },
       });
 
+      if (dto.playerIds && dto.playerIds.length > 0) {
+        await this.prisma.parentPlayer.createMany({
+          data: dto.playerIds.map(playerId => ({
+            parentUserId: user.id,
+            playerId,
+          })),
+          skipDuplicates: true,
+        });
+      }
+
       await this.sendWelcomeEmailToUser(user);
 
       return user;
@@ -204,6 +214,19 @@ export class UserService {
           notifyWhatsApp: true,
           createdAt: true,
           updatedAt: true,
+          parentPlayers: {
+            select: {
+              playerId: true,
+              player: {
+                select: {
+                  id: true,
+                  firstname: true,
+                  lastname: true,
+                  birthDate: true,
+                },
+              },
+            },
+          },
         },
       });
 
@@ -246,6 +269,21 @@ export class UserService {
       if (dto.notifySMS !== undefined) updateData.notifySMS = dto.notifySMS;
       if (dto.notifyWhatsApp !== undefined)
         updateData.notifyWhatsApp = dto.notifyWhatsApp;
+
+      if (dto.playerIds !== undefined) {
+        await this.prisma.parentPlayer.deleteMany({
+          where: { parentUserId: id },
+        });
+        if (dto.playerIds.length > 0) {
+          await this.prisma.parentPlayer.createMany({
+            data: dto.playerIds.map(playerId => ({
+              parentUserId: id,
+              playerId,
+            })),
+            skipDuplicates: true,
+          });
+        }
+      }
 
       const updatedUser = await this.prisma.user.update({
         where: { id },
@@ -296,6 +334,38 @@ export class UserService {
     } catch {
       throw new InternalServerErrorException();
     }
+  }
+
+  async addPlayerToParent(parentId: string, playerId: string) {
+    try {
+      await this.prisma.parentPlayer.create({
+        data: { parentUserId: parentId, playerId },
+      });
+      return { ok: true };
+    } catch {
+      throw new InternalServerErrorException();
+    }
+  }
+
+  async removePlayerFromParent(parentId: string, playerId: string) {
+    try {
+      await this.prisma.parentPlayer.delete({
+        where: {
+          parentUserId_playerId: { parentUserId: parentId, playerId },
+        },
+      });
+      return { ok: true };
+    } catch {
+      throw new InternalServerErrorException();
+    }
+  }
+
+  async getParentPlayerIds(parentId: string): Promise<string[]> {
+    const links = await this.prisma.parentPlayer.findMany({
+      where: { parentUserId: parentId },
+      select: { playerId: true },
+    });
+    return links.map(l => l.playerId);
   }
 
   // -----------------------------------------------------------------------------------------------------

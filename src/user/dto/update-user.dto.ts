@@ -8,6 +8,8 @@ import {
   IsBoolean,
   IsEmail,
   IsNumber,
+  IsArray,
+  IsUUID,
 } from 'class-validator';
 
 export class UpdateUserDto {
@@ -146,4 +148,14 @@ export class UpdateUserDto {
   @IsOptional()
   @IsBoolean()
   notifyWhatsApp?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Player IDs to associate (only for role=parent)',
+    type: [String],
+    example: ['uuid1', 'uuid2'],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsUUID('4', { each: true })
+  playerIds?: string[];
 }
