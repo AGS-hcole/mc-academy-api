@@ -6,7 +6,8 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { ReportsService } from './reports.service';
-import { AdminGuard } from '../auth/guards/admin.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
 import {
   SessionsQueryDto,
   SessionsTimeseriesQueryDto,
@@ -21,7 +22,8 @@ import {
 @ApiTags('reports')
 @ApiBearerAuth()
 @Controller('reports/sessions')
-@UseGuards(AdminGuard)
+@UseGuards(RolesGuard)
+@Roles('admin', 'parent')
 export class ReportsController {
   constructor(private readonly reportsService: ReportsService) {}
 
@@ -68,7 +70,8 @@ export class ReportsController {
 @ApiTags('reports')
 @ApiBearerAuth()
 @Controller('reports/ratings')
-@UseGuards(AdminGuard)
+@UseGuards(RolesGuard)
+@Roles('admin', 'parent')
 export class RatingsReportsController {
   constructor(private readonly reportsService: ReportsService) {}
 
