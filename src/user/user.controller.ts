@@ -10,6 +10,7 @@ import {
   Query,
   HttpCode,
   HttpStatus,
+  ForbiddenException,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -131,5 +132,27 @@ export class UserController {
     @Param('playerId') playerId: string,
   ) {
     return this.userService.removeChildFromParent(id, playerId);
+  }
+}
+
+@ApiBearerAuth()
+@ApiTags('Parent Children')
+@Controller('parent/children')
+export class ParentChildrenController {
+  constructor(private readonly userService: UserService) {}
+
+  @Get()
+  @UseGuards(AuthGuard)
+  @ApiOperation({
+    summary: 'Get the list of children of the connected parent',
+    description:
+      'Returns the children (id, firstname, lastname) linked to the connected user. Requires the parent role.',
+  })
+  getChildren(@GetUser() user: User) {
+    if (user.role !== 'parent') {
+      throw new ForbiddenException('Parent access required');
+    }
+
+    return this.userService.getChildrenBrief(user.id);
   }
 }

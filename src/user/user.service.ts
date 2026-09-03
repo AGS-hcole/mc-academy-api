@@ -368,6 +368,26 @@ export class UserService {
     return links.map(l => l.childUserId);
   }
 
+  async getChildrenBrief(parentId: string) {
+    const links = await this.prisma.parentChild.findMany({
+      where: { parentUserId: parentId },
+      select: {
+        childUser: {
+          select: {
+            id: true,
+            firstname: true,
+            lastname: true,
+          },
+        },
+      },
+      orderBy: {
+        childUser: { lastname: 'asc' },
+      },
+    });
+
+    return links.map(l => l.childUser);
+  }
+
   // -----------------------------------------------------------------------------------------------------
   // @ Private methods
   // -----------------------------------------------------------------------------------------------------
