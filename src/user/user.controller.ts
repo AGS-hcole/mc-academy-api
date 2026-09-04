@@ -26,6 +26,8 @@ import { User } from './entities/user.entity';
 import { AuthGuard } from 'src/auth/guards/auth.guards';
 import { GetUser } from 'src/auth/decorators/get-user.decorator';
 import { AdminGuard } from 'src/auth/guards/admin.guard';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { Roles } from 'src/auth/decorators/roles.decorator';
 
 @ApiBearerAuth()
 @ApiTags('Users')
@@ -52,7 +54,8 @@ export class UserController {
   }
 
   @Get('lookup')
-  @UseGuards(AdminGuard)
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'parent')
   @ApiOperation({ summary: 'Lookup users with filters (Admin only)' })
   @ApiQuery({ name: 'role', required: false, description: 'Filter by role' })
   @ApiQuery({
