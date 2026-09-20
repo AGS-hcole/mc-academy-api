@@ -1,5 +1,4 @@
 import {
-  ForbiddenException,
   Injectable,
   InternalServerErrorException,
   UnauthorizedException,
@@ -374,15 +373,6 @@ export class UserService {
   }
 
   async getChildrenBrief(parentId: string) {
-    const parent = await this.prisma.user.findUnique({
-      where: { id: parentId },
-      select: { role: true },
-    });
-
-    if (!parent || parent.role !== 'parent') {
-      throw new ForbiddenException('Parent access required');
-    }
-
     const links = await this.prisma.parentChild.findMany({
       where: { parentUserId: parentId },
       select: {
