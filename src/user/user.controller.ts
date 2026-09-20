@@ -1,5 +1,6 @@
 import {
   Controller,
+  ForbiddenException,
   Get,
   Post,
   Body,
@@ -133,5 +134,23 @@ export class UserController {
     @Param('playerId') playerId: string,
   ) {
     return this.userService.removePlayerFromParent(id, playerId);
+  }
+}
+
+@ApiBearerAuth()
+@ApiTags('Parent')
+@Controller('parent')
+export class ParentChildrenController {
+  constructor(private readonly userService: UserService) {}
+
+  @Get('children')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: "Get current parent's linked children" })
+  async getChildren(@GetUser() user: any) {
+    if (user?.role !== 'parent') {
+      throw new ForbiddenException('Parent access required');
+    }
+
+    return this.userService.getChildrenBrief(user.id);
   }
 }

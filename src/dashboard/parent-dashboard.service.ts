@@ -28,10 +28,12 @@ export class ParentDashboardService {
           },
         },
       },
-      orderBy: [
-        { child: { lastname: 'asc' } },
-        { child: { firstname: 'asc' } },
-      ],
+    });
+
+    childLinks.sort((a, b) => {
+      const lastnameCmp = a.child.lastname.localeCompare(b.child.lastname);
+      if (lastnameCmp !== 0) return lastnameCmp;
+      return a.child.firstname.localeCompare(b.child.firstname);
     });
 
     const childIds = childLinks.map(link => link.childUserId);

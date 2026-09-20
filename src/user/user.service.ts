@@ -1,4 +1,5 @@
 import {
+  ForbiddenException,
   Injectable,
   InternalServerErrorException,
   UnauthorizedException,
@@ -370,6 +371,38 @@ export class UserService {
       select: { childUserId: true },
     });
     return links.map(l => l.childUserId);
+  }
+
+  async getChildrenBrief(parentId: string) {
+    const parent = await this.prisma.user.findUnique({
+      where: { id: parentId },
+      select: { role: true },
+    });
+
+    if (!parent || parent.role !== 'parent') {
+      throw new ForbiddenException('Parent access required');
+    }
+
+    const links = await this.prisma.parentChild.findMany({
+      where: { parentUserId: parentId },
+      select: {
+        child: {
+          select: {
+            id: true,
+            firstname: true,
+            lastname: true,
+          },
+        },
+      },
+    });
+
+    return links
+      .map(link => link.child)
+      .sort((a, b) => {
+        const lastnameCmp = a.lastname.localeCompare(b.lastname);
+        if (lastnameCmp !== 0) return lastnameCmp;
+        return a.firstname.localeCompare(b.firstname);
+      });
   }
 
   // -----------------------------------------------------------------------------------------------------
