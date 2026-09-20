@@ -8,6 +8,8 @@ import {
   Delete,
   UseGuards,
   Query,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -17,6 +19,7 @@ import {
   ApiTags,
   ApiQuery,
   ApiOperation,
+  ApiParam,
 } from '@nestjs/swagger';
 import { User } from './entities/user.entity';
 import { AuthGuard } from 'src/auth/guards/auth.guards';
@@ -98,5 +101,33 @@ export class UserController {
   @UseGuards(AuthGuard)
   delete(@Param('id') id: string, @GetUser() user: User) {
     return this.userService.delete(id, user);
+  }
+
+  @Post(':id/players/:playerId')
+  @UseGuards(AdminGuard)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Associate a player to a parent user (Admin only)' })
+  @ApiParam({ name: 'id', description: 'Parent user ID' })
+  @ApiParam({ name: 'playerId', description: 'Player ID' })
+  addPlayerToParent(
+    @Param('id') id: string,
+    @Param('playerId') playerId: string,
+  ) {
+    return this.userService.addPlayerToParent(id, playerId);
+  }
+
+  @Delete(':id/players/:playerId')
+  @UseGuards(AdminGuard)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Remove a player association from a parent user (Admin only)',
+  })
+  @ApiParam({ name: 'id', description: 'Parent user ID' })
+  @ApiParam({ name: 'playerId', description: 'Player ID' })
+  removePlayerFromParent(
+    @Param('id') id: string,
+    @Param('playerId') playerId: string,
+  ) {
+    return this.userService.removePlayerFromParent(id, playerId);
   }
 }

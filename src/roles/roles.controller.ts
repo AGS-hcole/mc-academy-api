@@ -19,9 +19,9 @@ export class RolesController {
       type: 'array',
       items: {
         type: 'string',
-        enum: ['admin', 'user'],
+        enum: ['admin', 'user', 'parent'],
       },
-      example: ['admin', 'user'],
+      example: ['admin', 'user', 'parent'],
     },
   })
   async getRoles() {
