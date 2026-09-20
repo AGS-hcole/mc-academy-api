@@ -5,8 +5,10 @@ import {
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
+import { Role } from '@prisma/client';
 import { ReportsService } from './reports.service';
-import { AdminGuard } from '../auth/guards/admin.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { RolesGuard } from '../auth/guards/roles.guard';
 import {
   SessionsQueryDto,
   SessionsTimeseriesQueryDto,
@@ -21,7 +23,8 @@ import {
 @ApiTags('reports')
 @ApiBearerAuth()
 @Controller('reports/sessions')
-@UseGuards(AdminGuard)
+@UseGuards(RolesGuard)
+@Roles(Role.admin, Role.parent)
 export class ReportsController {
   constructor(private readonly reportsService: ReportsService) {}
 
@@ -68,7 +71,8 @@ export class ReportsController {
 @ApiTags('reports')
 @ApiBearerAuth()
 @Controller('reports/ratings')
-@UseGuards(AdminGuard)
+@UseGuards(RolesGuard)
+@Roles(Role.admin, Role.parent)
 export class RatingsReportsController {
   constructor(private readonly reportsService: ReportsService) {}
 
