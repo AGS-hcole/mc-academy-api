@@ -7,10 +7,11 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { NotificationsService } from 'src/notifications/notifications.service';
 import { AuthModule } from 'src/auth/auth.module';
 import { EmailService } from 'src/common/email.service';
+import { TrainingGroupsModule } from 'src/training-groups/training-groups.module';
 
 @Module({
   controllers: [SessionsController],
-  imports: [AuthModule],
+  imports: [AuthModule, TrainingGroupsModule],
   providers: [
     SessionsService,
     SessionsCron,

@@ -141,6 +141,7 @@ model User {
   residenceStays         ResidenceStay[]
   transportBookings      TransportBooking[]
   parentPlayers          ParentPlayer[]
+  trainingGroupMembers   TrainingGroupMember[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime? @updatedAt
@@ -158,7 +159,8 @@ model Site {
   isMorningDefault   Boolean?
   isAfternoonDefault Boolean?
 
-  sessions Session[]
+  sessions       Session[]
+  trainingGroups TrainingGroup[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime? @updatedAt
@@ -220,6 +222,53 @@ model Attendance {
   @@index([userId, sessionId])
   @@index([outOfContract])
   @@index([sessionId])
+}
+
+model TrainingGroup {
+  id       String  @id @default(uuid())
+  name     String
+  siteId   String
+  isActive Boolean @default(true)
+
+  site      Site                    @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  members   TrainingGroupMember[]
+  schedules TrainingGroupSchedule[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+
+  @@index([siteId])
+  @@index([isActive])
+}
+
+model TrainingGroupMember {
+  groupId String
+  userId  String
+
+  group TrainingGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@id([groupId, userId])
+  @@index([userId])
+}
+
+model TrainingGroupSchedule {
+  id        String @id @default(uuid())
+  groupId   String
+  dayOfWeek Int // ISO weekday convention: Monday = 1 ... Sunday = 7
+  startTime DateTime // fixed UTC time container (1970-01-01THH:mm:ssZ)
+  endTime   DateTime // fixed UTC time container (1970-01-01THH:mm:ssZ)
+
+  group TrainingGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+
+  @@unique([groupId, dayOfWeek, startTime, endTime])
+  @@index([groupId, dayOfWeek])
+  @@index([dayOfWeek, startTime, endTime])
 }
 
 model SessionRating {

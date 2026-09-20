@@ -20,6 +20,7 @@ import { EventsModule } from './events/events.module';
 import { SocialModule } from './social/social.module';
 import { ResidenceModule } from './residence/residence.module';
 import { TransportModule } from './transport/transport.module';
+import { TrainingGroupsModule } from './training-groups/training-groups.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { TransportModule } from './transport/transport.module';
     SocialModule,
     ResidenceModule,
     TransportModule,
+    TrainingGroupsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

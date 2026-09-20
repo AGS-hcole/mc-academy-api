@@ -5,6 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { addDays, startOfDay } from 'date-fns';
 import { NotificationsService } from 'src/notifications/notifications.service';
 import { DateTime } from 'luxon';
+import { TrainingGroupsService } from 'src/training-groups/training-groups.service';
 
 const tz = 'Europe/Paris';
 
@@ -33,6 +34,7 @@ export class SessionsCron {
   constructor(
     private prisma: PrismaService,
     private notifications: NotificationsService,
+    private trainingGroupsService: TrainingGroupsService,
   ) {}
 
   /**
@@ -153,8 +155,14 @@ export class SessionsCron {
       }
     }
 
+    const endNextWeek = asUtcDay(addDays(startNextWeek, 4));
+    const syncResult = await this.trainingGroupsService.applyToSessionsInRange(
+      asUtcDay(startNextWeek),
+      endNextWeek,
+    );
+
     this.logger.log(
-      '✅ Sessions générées (matin/AM & après-midi/PM, 4 par jour)',
+      `✅ Sessions générées puis pré-groupes appliqués (${syncResult.created} attendance(s) créées)`,
     );
   }
 
