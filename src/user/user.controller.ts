@@ -106,9 +106,12 @@ export class UserController {
   @Post(':id/players/:playerId')
   @UseGuards(AdminGuard)
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Associate a player to a parent user (Admin only)' })
+  @ApiOperation({
+    summary:
+      'Associate a child user to a parent user (Admin only, legacy route name)',
+  })
   @ApiParam({ name: 'id', description: 'Parent user ID' })
-  @ApiParam({ name: 'playerId', description: 'Player ID' })
+  @ApiParam({ name: 'playerId', description: 'Child user ID' })
   addPlayerToParent(
     @Param('id') id: string,
     @Param('playerId') playerId: string,
@@ -120,10 +123,11 @@ export class UserController {
   @UseGuards(AdminGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Remove a player association from a parent user (Admin only)',
+    summary:
+      'Remove a child user association from a parent user (Admin only, legacy route name)',
   })
   @ApiParam({ name: 'id', description: 'Parent user ID' })
-  @ApiParam({ name: 'playerId', description: 'Player ID' })
+  @ApiParam({ name: 'playerId', description: 'Child user ID' })
   removePlayerFromParent(
     @Param('id') id: string,
     @Param('playerId') playerId: string,
