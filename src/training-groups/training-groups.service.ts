@@ -43,7 +43,10 @@ export class TrainingGroupsService {
       include: {
         site: { select: { id: true, name: true } },
         members: {
-          orderBy: [{ user: { lastname: 'asc' } }, { user: { firstname: 'asc' } }],
+          orderBy: [
+            { user: { lastname: 'asc' } },
+            { user: { firstname: 'asc' } },
+          ],
           select: {
             userId: true,
             createdAt: true,
@@ -249,7 +252,9 @@ export class TrainingGroupsService {
       throw new NotFoundException('Training group schedule not found');
     }
 
-    await this.prisma.trainingGroupSchedule.delete({ where: { id: scheduleId } });
+    await this.prisma.trainingGroupSchedule.delete({
+      where: { id: scheduleId },
+    });
 
     return this.findOne(groupId);
   }
@@ -321,13 +326,19 @@ export class TrainingGroupsService {
     const cursorStart = DateTime.fromJSDate(startUtc, { zone: 'utc' }).startOf(
       'day',
     );
-    const cursorEnd = DateTime.fromJSDate(endUtc, { zone: 'utc' }).startOf('day');
+    const cursorEnd = DateTime.fromJSDate(endUtc, { zone: 'utc' }).startOf(
+      'day',
+    );
 
     for (const group of groups) {
       if (group.members.length === 0 || group.schedules.length === 0) continue;
 
       for (const schedule of group.schedules) {
-        for (let cursor = cursorStart; cursor <= cursorEnd; cursor = cursor.plus({ days: 1 })) {
+        for (
+          let cursor = cursorStart;
+          cursor <= cursorEnd;
+          cursor = cursor.plus({ days: 1 })
+        ) {
           if (cursor.weekday !== schedule.dayOfWeek) continue;
 
           const targetDate = cursor.toJSDate();
@@ -354,7 +365,10 @@ export class TrainingGroupsService {
             candidates.set(dedupeKey, {
               sessionId: session.id,
               userId: member.userId,
-              outOfContract: this.isOutOfContract(member.user.formula, session.slot),
+              outOfContract: this.isOutOfContract(
+                member.user.formula,
+                session.slot,
+              ),
             });
           }
         }
@@ -471,7 +485,15 @@ export class TrainingGroupsService {
 
   private asUtcDay(date: Date): Date {
     return new Date(
-      Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 0, 0, 0, 0),
+      Date.UTC(
+        date.getUTCFullYear(),
+        date.getUTCMonth(),
+        date.getUTCDate(),
+        0,
+        0,
+        0,
+        0,
+      ),
     );
   }
 
@@ -493,7 +515,9 @@ export class TrainingGroupsService {
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === 'P2002'
     ) {
-      throw new BadRequestException('A duplicate training group schedule already exists');
+      throw new BadRequestException(
+        'A duplicate training group schedule already exists',
+      );
     }
 
     if (

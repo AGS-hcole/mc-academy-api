@@ -2,7 +2,12 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsInt, Matches, Max, Min } from 'class-validator';
 
 export class CreateTrainingGroupScheduleDto {
-  @ApiProperty({ description: 'ISO weekday (1=Monday ... 7=Sunday)', minimum: 1, maximum: 7, example: 1 })
+  @ApiProperty({
+    description: 'ISO weekday (1=Monday ... 7=Sunday)',
+    minimum: 1,
+    maximum: 7,
+    example: 1,
+  })
   @IsInt()
   @Min(1)
   @Max(7)

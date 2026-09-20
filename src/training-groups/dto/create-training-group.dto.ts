@@ -20,7 +20,10 @@ export class CreateTrainingGroupDto {
   @IsUUID('4')
   siteId: string;
 
-  @ApiPropertyOptional({ description: 'Whether the group is active', default: true })
+  @ApiPropertyOptional({
+    description: 'Whether the group is active',
+    default: true,
+  })
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
