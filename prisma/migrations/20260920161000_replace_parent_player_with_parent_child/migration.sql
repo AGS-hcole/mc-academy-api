@@ -28,5 +28,5 @@ WHERE p."userId" IS NOT NULL
 ON CONFLICT ("parentUserId", "childUserId") DO NOTHING;
 
 -- Drop old FKs/tables
-DROP TABLE "ParentPlayer";
-DROP TABLE "Player";
+DROP TABLE IF EXISTS "ParentPlayer";
+DROP TABLE IF EXISTS "Player";
