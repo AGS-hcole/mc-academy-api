@@ -140,7 +140,8 @@ model User {
   socialComments         SocialComment[]
   residenceStays         ResidenceStay[]
   transportBookings      TransportBooking[]
-  parentPlayers          ParentPlayer[]
+  childrenLinks          ParentChild[]           @relation("ParentUser")
+  parentLinks            ParentChild[]           @relation("ChildUser")
 
   createdAt DateTime  @default(now())
   updatedAt DateTime? @updatedAt
@@ -548,31 +549,16 @@ model TransportBooking {
   @@index([status])
 }
 
-// ---------- Parent / Player ----------
-model Player {
-  id        String   @id @default(uuid())
-  userId    String?  @unique // optional: the player's own user account
-  firstname String
-  lastname  String
-  birthDate DateTime?
-
-  parentPlayers ParentPlayer[]
-
-  createdAt DateTime  @default(now())
-  updatedAt DateTime? @updatedAt
-
-  @@index([lastname, firstname])
-}
-
-model ParentPlayer {
+// ---------- Parent / Child ----------
+model ParentChild {
   parentUserId String
-  playerId     String
+  childUserId  String
   createdAt    DateTime @default(now())
 
-  parent User   @relation(fields: [parentUserId], references: [id], onDelete: Cascade)
-  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  parentUser User @relation("ParentUser", fields: [parentUserId], references: [id], onDelete: Cascade)
+  childUser  User @relation("ChildUser", fields: [childUserId], references: [id], onDelete: Cascade)
 
-  @@unique([parentUserId, playerId])
+  @@id([parentUserId, childUserId])
   @@index([parentUserId])
-  @@index([playerId])
+  @@index([childUserId])
 }
