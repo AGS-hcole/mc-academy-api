@@ -18,6 +18,18 @@ import {
   SessionsListDto,
   RatingsQueryDto,
   RatingsSummaryDto,
+  ResidenceQueryDto,
+  ResidenceTimeseriesQueryDto,
+  ResidenceListQueryDto,
+  ResidenceSummaryDto,
+  ResidenceTimeseriesDto,
+  ResidenceListDto,
+  TransportsQueryDto,
+  TransportsTimeseriesQueryDto,
+  TransportsListQueryDto,
+  TransportsSummaryDto,
+  TransportsTimeseriesDto,
+  TransportsListDto,
 } from './dto';
 
 @ApiTags('reports')
@@ -88,5 +100,102 @@ export class RatingsReportsController {
     @Query() query: RatingsQueryDto,
   ): Promise<RatingsSummaryDto> {
     return this.reportsService.getRatingsSummary(query);
+  }
+}
+
+@ApiTags('reports')
+@ApiBearerAuth()
+@Controller('reports/residence')
+@UseGuards(RolesGuard)
+@Roles(Role.admin, Role.parent)
+export class ResidenceReportsController {
+  constructor(private readonly reportsService: ReportsService) {}
+
+  @Get('summary')
+  @ApiOperation({ summary: 'Get residence analytics summary' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns summary statistics for residence stays in date range',
+    type: ResidenceSummaryDto,
+  })
+  async getSummary(
+    @Query() query: ResidenceQueryDto,
+  ): Promise<ResidenceSummaryDto> {
+    return this.reportsService.getResidenceSummary(query);
+  }
+
+  @Get('timeseries')
+  @ApiOperation({ summary: 'Get residence analytics time series' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns residence daily time series in date range',
+    type: ResidenceTimeseriesDto,
+  })
+  async getTimeseries(
+    @Query() query: ResidenceTimeseriesQueryDto,
+  ): Promise<ResidenceTimeseriesDto> {
+    return this.reportsService.getResidenceTimeseries(query);
+  }
+
+  @Get('list')
+  @ApiOperation({ summary: 'Get paginated list of residence stays' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns paginated residence stays in date range',
+    type: ResidenceListDto,
+  })
+  async getList(
+    @Query() query: ResidenceListQueryDto,
+  ): Promise<ResidenceListDto> {
+    return this.reportsService.getResidenceList(query);
+  }
+}
+
+@ApiTags('reports')
+@ApiBearerAuth()
+@Controller('reports/transports')
+@UseGuards(RolesGuard)
+@Roles(Role.admin, Role.parent)
+export class TransportsReportsController {
+  constructor(private readonly reportsService: ReportsService) {}
+
+  @Get('summary')
+  @ApiOperation({ summary: 'Get transport analytics summary' })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Returns summary statistics for transport bookings in date range',
+    type: TransportsSummaryDto,
+  })
+  async getSummary(
+    @Query() query: TransportsQueryDto,
+  ): Promise<TransportsSummaryDto> {
+    return this.reportsService.getTransportsSummary(query);
+  }
+
+  @Get('timeseries')
+  @ApiOperation({ summary: 'Get transport analytics time series' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns transport daily time series in date range',
+    type: TransportsTimeseriesDto,
+  })
+  async getTimeseries(
+    @Query() query: TransportsTimeseriesQueryDto,
+  ): Promise<TransportsTimeseriesDto> {
+    return this.reportsService.getTransportsTimeseries(query);
+  }
+
+  @Get('list')
+  @ApiOperation({ summary: 'Get paginated list of transport bookings' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns paginated transport bookings in date range',
+    type: TransportsListDto,
+  })
+  async getList(
+    @Query() query: TransportsListQueryDto,
+  ): Promise<TransportsListDto> {
+    return this.reportsService.getTransportsList(query);
   }
 }

@@ -13,6 +13,18 @@ import {
   RatingsQueryDto,
   RatingsSummaryDto,
   RatingDistribution,
+  ResidenceQueryDto,
+  ResidenceTimeseriesQueryDto,
+  ResidenceListQueryDto,
+  ResidenceSummaryDto,
+  ResidenceTimeseriesDto,
+  ResidenceListDto,
+  TransportsQueryDto,
+  TransportsTimeseriesQueryDto,
+  TransportsListQueryDto,
+  TransportsSummaryDto,
+  TransportsTimeseriesDto,
+  TransportsListDto,
 } from './dto';
 
 @Injectable()
@@ -585,5 +597,313 @@ export class ReportsService {
     // ---------- END NEW ----------
 
     return response;
+  }
+
+  async getResidenceSummary(
+    query: ResidenceQueryDto,
+  ): Promise<ResidenceSummaryDto> {
+    const { from, to, userId } = query;
+    const { fromDate, toDate } = this.validateDateRange(from, to);
+
+    const stays = await this.prisma.residenceStay.findMany({
+      where: {
+        date: { gte: fromDate, lt: toDate },
+        ...(userId ? { userId } : {}),
+      },
+      select: {
+        userId: true,
+        status: true,
+      },
+    });
+
+    const uniqueUsers = new Set(stays.map(stay => stay.userId));
+    const canceled = stays.filter(stay => stay.status === 'CANCELED').length;
+    const planned = stays.length - canceled;
+
+    return {
+      period: { from, to, timezone: this.TIMEZONE },
+      totals: {
+        nights: stays.length,
+        planned,
+        canceled,
+        uniqueUsers: uniqueUsers.size,
+      },
+    };
+  }
+
+  async getResidenceTimeseries(
+    query: ResidenceTimeseriesQueryDto,
+  ): Promise<ResidenceTimeseriesDto> {
+    const { from, to, userId } = query;
+    const { fromDate, toDate } = this.validateDateRange(from, to);
+
+    const stays = await this.prisma.residenceStay.findMany({
+      where: {
+        date: { gte: fromDate, lt: toDate },
+        ...(userId ? { userId } : {}),
+      },
+      select: {
+        date: true,
+        status: true,
+      },
+    });
+
+    const dailyData = new Map<
+      string,
+      { total: number; planned: number; canceled: number }
+    >();
+
+    for (const stay of stays) {
+      const parisTime = toZonedTime(stay.date, this.TIMEZONE);
+      const dateKey = format(startOfDay(parisTime), 'yyyy-MM-dd');
+
+      if (!dailyData.has(dateKey)) {
+        dailyData.set(dateKey, { total: 0, planned: 0, canceled: 0 });
+      }
+
+      const data = dailyData.get(dateKey)!;
+      data.total++;
+      if (stay.status === 'CANCELED') data.canceled++;
+      else data.planned++;
+    }
+
+    const buckets: ResidenceTimeseriesDto['buckets'] = [];
+    const parisFromDate = toZonedTime(fromDate, this.TIMEZONE);
+    const parisToDate = toZonedTime(toDate, this.TIMEZONE);
+    let current = startOfDay(parisFromDate);
+    const end = startOfDay(parisToDate);
+
+    while (current < end) {
+      const dateStr = format(current, 'yyyy-MM-dd');
+      const data = dailyData.get(dateStr);
+      buckets.push({
+        date: dateStr,
+        total: data?.total || 0,
+        planned: data?.planned || 0,
+        canceled: data?.canceled || 0,
+      });
+      current = addDays(current, 1);
+    }
+
+    return { buckets };
+  }
+
+  async getResidenceList(
+    query: ResidenceListQueryDto,
+  ): Promise<ResidenceListDto> {
+    const {
+      from,
+      to,
+      userId,
+      page = 1,
+      pageSize = 25,
+      sort = 'date:desc',
+    } = query;
+    const { fromDate, toDate } = this.validateDateRange(from, to);
+    const sortDirection = sort === 'date:asc' ? 'asc' : 'desc';
+
+    const where: Prisma.ResidenceStayWhereInput = {
+      date: { gte: fromDate, lt: toDate },
+      ...(userId ? { userId } : {}),
+    };
+
+    const [total, stays] = await Promise.all([
+      this.prisma.residenceStay.count({ where }),
+      this.prisma.residenceStay.findMany({
+        where,
+        include: {
+          user: { select: { id: true, firstname: true, lastname: true } },
+          manor: { select: { name: true } },
+        },
+        orderBy: { date: sortDirection },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+    ]);
+
+    return {
+      items: stays.map(stay => ({
+        id: stay.id,
+        date: stay.date.toISOString(),
+        manorName: stay.manor?.name ?? null,
+        user: stay.user,
+        status: stay.status,
+        overCapacity: stay.overCapacity,
+        createdByAdmin: stay.createdByAdmin,
+      })),
+      total,
+      page,
+      pageSize,
+    };
+  }
+
+  async getTransportsSummary(
+    query: TransportsQueryDto,
+  ): Promise<TransportsSummaryDto> {
+    const { from, to, userId } = query;
+    const { fromDate, toDate } = this.validateDateRange(from, to);
+
+    const bookings = await this.prisma.transportBooking.findMany({
+      where: {
+        ...(userId ? { userId } : {}),
+        occurrence: {
+          departureAt: { gte: fromDate, lt: toDate },
+        },
+      },
+      select: {
+        userId: true,
+        occurrenceId: true,
+        status: true,
+      },
+    });
+
+    const uniqueUsers = new Set(bookings.map(booking => booking.userId));
+    const uniqueOccurrences = new Set(
+      bookings.map(booking => booking.occurrenceId),
+    );
+    const cancelled = bookings.filter(
+      booking => booking.status === 'CANCELLED',
+    ).length;
+    const confirmed = bookings.length - cancelled;
+
+    return {
+      period: { from, to, timezone: this.TIMEZONE },
+      totals: {
+        bookings: bookings.length,
+        confirmed,
+        cancelled,
+        uniqueUsers: uniqueUsers.size,
+        uniqueOccurrences: uniqueOccurrences.size,
+      },
+    };
+  }
+
+  async getTransportsTimeseries(
+    query: TransportsTimeseriesQueryDto,
+  ): Promise<TransportsTimeseriesDto> {
+    const { from, to, userId } = query;
+    const { fromDate, toDate } = this.validateDateRange(from, to);
+
+    const bookings = await this.prisma.transportBooking.findMany({
+      where: {
+        ...(userId ? { userId } : {}),
+        occurrence: {
+          departureAt: { gte: fromDate, lt: toDate },
+        },
+      },
+      select: {
+        status: true,
+        occurrence: { select: { departureAt: true } },
+      },
+    });
+
+    const dailyData = new Map<
+      string,
+      { total: number; confirmed: number; cancelled: number }
+    >();
+
+    for (const booking of bookings) {
+      const parisTime = toZonedTime(
+        booking.occurrence.departureAt,
+        this.TIMEZONE,
+      );
+      const dateKey = format(startOfDay(parisTime), 'yyyy-MM-dd');
+
+      if (!dailyData.has(dateKey)) {
+        dailyData.set(dateKey, { total: 0, confirmed: 0, cancelled: 0 });
+      }
+
+      const data = dailyData.get(dateKey)!;
+      data.total++;
+      if (booking.status === 'CANCELLED') data.cancelled++;
+      else data.confirmed++;
+    }
+
+    const buckets: TransportsTimeseriesDto['buckets'] = [];
+    const parisFromDate = toZonedTime(fromDate, this.TIMEZONE);
+    const parisToDate = toZonedTime(toDate, this.TIMEZONE);
+    let current = startOfDay(parisFromDate);
+    const end = startOfDay(parisToDate);
+
+    while (current < end) {
+      const dateStr = format(current, 'yyyy-MM-dd');
+      const data = dailyData.get(dateStr);
+      buckets.push({
+        date: dateStr,
+        total: data?.total || 0,
+        confirmed: data?.confirmed || 0,
+        cancelled: data?.cancelled || 0,
+      });
+      current = addDays(current, 1);
+    }
+
+    return { buckets };
+  }
+
+  async getTransportsList(
+    query: TransportsListQueryDto,
+  ): Promise<TransportsListDto> {
+    const {
+      from,
+      to,
+      userId,
+      page = 1,
+      pageSize = 25,
+      sort = 'date:desc',
+    } = query;
+    const { fromDate, toDate } = this.validateDateRange(from, to);
+    const sortDirection = sort === 'date:asc' ? 'asc' : 'desc';
+
+    const where: Prisma.TransportBookingWhereInput = {
+      ...(userId ? { userId } : {}),
+      occurrence: {
+        departureAt: { gte: fromDate, lt: toDate },
+      },
+    };
+
+    const [total, bookings] = await Promise.all([
+      this.prisma.transportBooking.count({ where }),
+      this.prisma.transportBooking.findMany({
+        where,
+        include: {
+          user: { select: { id: true, firstname: true, lastname: true } },
+          occurrence: {
+            include: {
+              template: {
+                select: { name: true, fromLabel: true, toLabel: true },
+              },
+            },
+          },
+        },
+        orderBy: { occurrence: { departureAt: sortDirection } },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+    ]);
+
+    return {
+      items: bookings.map(booking => ({
+        id: booking.id,
+        departureAt: booking.occurrence.departureAt.toISOString(),
+        templateName: booking.occurrence.template?.name ?? null,
+        fromLabel: booking.occurrence.template?.fromLabel ?? null,
+        toLabel: booking.occurrence.template?.toLabel ?? null,
+        user: booking.user,
+        status: booking.status,
+        seats: booking.seats,
+      })),
+      total,
+      page,
+      pageSize,
+    };
+  }
+
+  private validateDateRange(from: string, to: string) {
+    const fromDate = new Date(from);
+    const toDate = new Date(to);
+    if (fromDate >= toDate) {
+      throw new BadRequestException('from date must be before to date');
+    }
+    return { fromDate, toDate };
   }
 }
