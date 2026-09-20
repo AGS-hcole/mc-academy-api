@@ -604,6 +604,7 @@ export class ReportsService {
   ): Promise<ResidenceSummaryDto> {
     const { from, to, userId, manorId, statusScope = 'all' } = query;
     const { fromDate, toDate } = this.validateDateRange(from, to);
+    await this.ensureUserExists(userId);
 
     const residenceStatusFilter =
       statusScope === 'planned'
@@ -645,6 +646,7 @@ export class ReportsService {
   ): Promise<ResidenceTimeseriesDto> {
     const { from, to, userId, manorId, statusScope = 'all' } = query;
     const { fromDate, toDate } = this.validateDateRange(from, to);
+    await this.ensureUserExists(userId);
 
     const residenceStatusFilter =
       statusScope === 'planned'
@@ -720,6 +722,7 @@ export class ReportsService {
       sort = 'date:desc',
     } = query;
     const { fromDate, toDate } = this.validateDateRange(from, to);
+    await this.ensureUserExists(userId);
     const sortDirection = sort === 'date:asc' ? 'asc' : 'desc';
     const residenceStatusFilter =
       statusScope === 'planned'
@@ -770,6 +773,7 @@ export class ReportsService {
   ): Promise<TransportsSummaryDto> {
     const { from, to, userId, templateId, statusScope = 'all' } = query;
     const { fromDate, toDate } = this.validateDateRange(from, to);
+    await this.ensureUserExists(userId);
     const bookingStatusFilter =
       statusScope === 'confirmed'
         ? 'CONFIRMED'
@@ -819,6 +823,7 @@ export class ReportsService {
   ): Promise<TransportsTimeseriesDto> {
     const { from, to, userId, templateId, statusScope = 'all' } = query;
     const { fromDate, toDate } = this.validateDateRange(from, to);
+    await this.ensureUserExists(userId);
     const bookingStatusFilter =
       statusScope === 'confirmed'
         ? 'CONFIRMED'
@@ -898,6 +903,7 @@ export class ReportsService {
       sort = 'date:desc',
     } = query;
     const { fromDate, toDate } = this.validateDateRange(from, to);
+    await this.ensureUserExists(userId);
     const sortDirection = sort === 'date:asc' ? 'asc' : 'desc';
     const bookingStatusFilter =
       statusScope === 'confirmed'
@@ -959,5 +965,16 @@ export class ReportsService {
       throw new BadRequestException('from date must be before to date');
     }
     return { fromDate, toDate };
+  }
+
+  private async ensureUserExists(userId?: string) {
+    if (!userId) return;
+    const userExists = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true },
+    });
+    if (!userExists) {
+      throw new BadRequestException('User not found');
+    }
   }
 }
