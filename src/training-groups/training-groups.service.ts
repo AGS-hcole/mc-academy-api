@@ -11,8 +11,8 @@ import {
   SessionSlot,
 } from '@prisma/client';
 import { DateTime } from 'luxon';
+import { computeOutOfContract } from 'src/common/utils/out-of-contract.util';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { computeOutOfContract } from 'src/sessions/utils/out-of-contract.util';
 import {
   CreateTrainingGroupDto,
   CreateTrainingGroupScheduleDto,
@@ -20,6 +20,33 @@ import {
   UpdateTrainingGroupDto,
   UpdateTrainingGroupScheduleDto,
 } from './dto';
+
+type TrainingGroupWithDetails = {
+  id: string;
+  name: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date | null;
+  site: { id: string; name: string };
+  members: Array<{
+    userId: string;
+    createdAt: Date;
+    user: {
+      id: string;
+      firstname: string;
+      lastname: string;
+      email: string;
+    };
+  }>;
+  schedules: Array<{
+    id: string;
+    dayOfWeek: number;
+    startTime: Date;
+    endTime: Date;
+    createdAt: Date;
+    updatedAt: Date | null;
+  }>;
+};
 
 @Injectable()
 export class TrainingGroupsService {
@@ -118,7 +145,10 @@ export class TrainingGroupsService {
 
       return this.findOne(group.id);
     } catch (error) {
-      this.handleKnownError(error, 'Invalid training group payload');
+      this.handleKnownError(
+        error,
+        'Invalid training group relation (site or nested reference)',
+      );
       throw error;
     }
   }
@@ -142,7 +172,10 @@ export class TrainingGroupsService {
 
       return this.findOne(id);
     } catch (error) {
-      this.handleKnownError(error, 'Unable to update training group');
+      this.handleKnownError(
+        error,
+        'Invalid training group relation while updating',
+      );
       throw error;
     }
   }
@@ -205,6 +238,16 @@ export class TrainingGroupsService {
     dto: UpdateTrainingGroupScheduleDto,
   ) {
     await this.ensureGroupExists(groupId);
+
+    if (
+      dto.dayOfWeek === undefined &&
+      dto.startTime === undefined &&
+      dto.endTime === undefined
+    ) {
+      throw new BadRequestException(
+        'At least one schedule field must be provided',
+      );
+    }
 
     const existing = await this.prisma.trainingGroupSchedule.findUnique({
       where: { id: scheduleId },
@@ -380,8 +423,43 @@ export class TrainingGroupsService {
       return { groups: groups.length, candidates: 0, created: 0 };
     }
 
+    const candidateRows = Array.from(candidates.values());
+    const sessionIds = [
+      ...new Set(candidateRows.map(candidate => candidate.sessionId)),
+    ];
+    const userIds = [
+      ...new Set(candidateRows.map(candidate => candidate.userId)),
+    ];
+
+    const existingAttendances = await this.prisma.attendance.findMany({
+      where: {
+        sessionId: { in: sessionIds },
+        userId: { in: userIds },
+      },
+      select: {
+        sessionId: true,
+        userId: true,
+      },
+    });
+
+    const existingKeySet = new Set(
+      existingAttendances.map(
+        attendance => `${attendance.sessionId}:${attendance.userId}`,
+      ),
+    );
+
+    const missingCandidates = candidateRows.filter(
+      candidate =>
+        !existingKeySet.has(`${candidate.sessionId}:${candidate.userId}`),
+    );
+
+    if (missingCandidates.length === 0) {
+      this.logger.log('Training groups found only existing attendances');
+      return { groups: groups.length, candidates: candidates.size, created: 0 };
+    }
+
     const result = await this.prisma.attendance.createMany({
-      data: Array.from(candidates.values()).map(candidate => ({
+      data: missingCandidates.map(candidate => ({
         sessionId: candidate.sessionId,
         userId: candidate.userId,
         status: AttendanceStatus.YES,
@@ -416,14 +494,16 @@ export class TrainingGroupsService {
   private async ensureUsersExist(userIds: string[]) {
     if (userIds.length === 0) return;
 
+    const uniqueUserIds = [...new Set(userIds)];
+
     const users = await this.prisma.user.findMany({
-      where: { id: { in: userIds } },
+      where: { id: { in: uniqueUserIds } },
       select: { id: true },
     });
 
-    if (users.length !== userIds.length) {
+    if (users.length !== uniqueUserIds.length) {
       const found = new Set(users.map(user => user.id));
-      const missing = userIds.filter(id => !found.has(id));
+      const missing = uniqueUserIds.filter(id => !found.has(id));
       throw new NotFoundException(
         `Some users were not found: ${missing.join(', ')}`,
       );
@@ -453,7 +533,7 @@ export class TrainingGroupsService {
     }
   }
 
-  private mapGroupDetails(group: any) {
+  private mapGroupDetails(group: TrainingGroupWithDetails) {
     return {
       id: group.id,
       name: group.name,
@@ -515,8 +595,24 @@ export class TrainingGroupsService {
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === 'P2002'
     ) {
+      const target = Array.isArray(error.meta?.target)
+        ? error.meta.target.join(',')
+        : `${error.meta?.target ?? ''}`;
+
+      if (target.includes('TrainingGroupSchedule')) {
+        throw new BadRequestException(
+          'A duplicate training group schedule already exists',
+        );
+      }
+
+      if (target.includes('TrainingGroupMember')) {
+        throw new BadRequestException(
+          'A duplicate training group member relation already exists',
+        );
+      }
+
       throw new BadRequestException(
-        'A duplicate training group schedule already exists',
+        'A unique constraint conflict occurred on training groups',
       );
     }
 

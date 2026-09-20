@@ -3,6 +3,7 @@ import {
   IsArray,
   IsBoolean,
   IsOptional,
+  IsObject,
   IsString,
   IsUUID,
   ArrayUnique,
@@ -44,6 +45,7 @@ export class CreateTrainingGroupDto {
   })
   @IsOptional()
   @IsArray()
+  @IsObject({ each: true })
   @ValidateNested({ each: true })
   @Type(() => CreateTrainingGroupScheduleDto)
   schedules?: CreateTrainingGroupScheduleDto[];

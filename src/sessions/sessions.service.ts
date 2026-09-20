@@ -9,7 +9,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AttendanceStatus, SessionSlot, User } from '@prisma/client';
 import { isBefore, startOfDay, endOfDay } from 'date-fns';
 import { CreateSessionDto, UpdateSessionDto, AdminRegisterDto } from './dto';
-import { computeOutOfContract } from './utils/out-of-contract.util';
+import { computeOutOfContract } from 'src/common/utils/out-of-contract.util';
 
 //const tz = 'Europe/Paris';
 

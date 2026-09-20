@@ -155,7 +155,7 @@ export class SessionsCron {
       }
     }
 
-    const endNextWeek = asUtcDay(addDays(startNextWeek, 4));
+    const endNextWeek = asUtcDay(addDays(startNextWeek, 6));
     const syncResult = await this.trainingGroupsService.applyToSessionsInRange(
       asUtcDay(startNextWeek),
       endNextWeek,
