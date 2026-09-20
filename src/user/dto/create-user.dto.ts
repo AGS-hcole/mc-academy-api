@@ -91,12 +91,13 @@ export class CreateUserDto {
   formula?: FormulaType;
 
   @ApiPropertyOptional({
-    description: 'Player IDs to associate (only for role=parent)',
+    description:
+      'IDs of existing User accounts to associate as children (only for role=parent)',
     type: [String],
     example: ['uuid1', 'uuid2'],
   })
   @IsOptional()
   @IsArray()
   @IsUUID('4', { each: true })
-  playerIds?: string[];
+  childUserIds?: string[];
 }

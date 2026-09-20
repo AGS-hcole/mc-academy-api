@@ -10,6 +10,7 @@ import {
   Query,
   HttpCode,
   HttpStatus,
+  ForbiddenException,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -25,6 +26,8 @@ import { User } from './entities/user.entity';
 import { AuthGuard } from 'src/auth/guards/auth.guards';
 import { GetUser } from 'src/auth/decorators/get-user.decorator';
 import { AdminGuard } from 'src/auth/guards/admin.guard';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { Roles } from 'src/auth/decorators/roles.decorator';
 
 @ApiBearerAuth()
 @ApiTags('Users')
@@ -51,7 +54,8 @@ export class UserController {
   }
 
   @Get('lookup')
-  @UseGuards(AdminGuard)
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'parent')
   @ApiOperation({ summary: 'Lookup users with filters (Admin only)' })
   @ApiQuery({ name: 'role', required: false, description: 'Filter by role' })
   @ApiQuery({
@@ -106,28 +110,52 @@ export class UserController {
   @Post(':id/players/:playerId')
   @UseGuards(AdminGuard)
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Associate a player to a parent user (Admin only)' })
+  @ApiOperation({
+    summary: 'Associate a child user to a parent user (Admin only)',
+  })
   @ApiParam({ name: 'id', description: 'Parent user ID' })
-  @ApiParam({ name: 'playerId', description: 'Player ID' })
+  @ApiParam({ name: 'playerId', description: 'Child user ID' })
   addPlayerToParent(
     @Param('id') id: string,
     @Param('playerId') playerId: string,
   ) {
-    return this.userService.addPlayerToParent(id, playerId);
+    return this.userService.addChildToParent(id, playerId);
   }
 
   @Delete(':id/players/:playerId')
   @UseGuards(AdminGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Remove a player association from a parent user (Admin only)',
+    summary: 'Remove a child user association from a parent user (Admin only)',
   })
   @ApiParam({ name: 'id', description: 'Parent user ID' })
-  @ApiParam({ name: 'playerId', description: 'Player ID' })
+  @ApiParam({ name: 'playerId', description: 'Child user ID' })
   removePlayerFromParent(
     @Param('id') id: string,
     @Param('playerId') playerId: string,
   ) {
-    return this.userService.removePlayerFromParent(id, playerId);
+    return this.userService.removeChildFromParent(id, playerId);
+  }
+}
+
+@ApiBearerAuth()
+@ApiTags('Parent Children')
+@Controller('parent/children')
+export class ParentChildrenController {
+  constructor(private readonly userService: UserService) {}
+
+  @Get()
+  @UseGuards(AuthGuard)
+  @ApiOperation({
+    summary: 'Get the list of children of the connected parent',
+    description:
+      'Returns the children (id, firstname, lastname) linked to the connected user. Requires the parent role.',
+  })
+  getChildren(@GetUser() user: User) {
+    if (user.role !== 'parent') {
+      throw new ForbiddenException('Parent access required');
+    }
+
+    return this.userService.getChildrenBrief(user.id);
   }
 }
