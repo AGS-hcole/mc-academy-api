@@ -602,13 +602,22 @@ export class ReportsService {
   async getResidenceSummary(
     query: ResidenceQueryDto,
   ): Promise<ResidenceSummaryDto> {
-    const { from, to, userId } = query;
+    const { from, to, userId, manorId, statusScope = 'all' } = query;
     const { fromDate, toDate } = this.validateDateRange(from, to);
+
+    const residenceStatusFilter =
+      statusScope === 'planned'
+        ? 'PLANNED'
+        : statusScope === 'canceled'
+          ? 'CANCELED'
+          : undefined;
 
     const stays = await this.prisma.residenceStay.findMany({
       where: {
         date: { gte: fromDate, lt: toDate },
         ...(userId ? { userId } : {}),
+        ...(manorId ? { manorId } : {}),
+        ...(residenceStatusFilter ? { status: residenceStatusFilter } : {}),
       },
       select: {
         userId: true,
@@ -634,13 +643,22 @@ export class ReportsService {
   async getResidenceTimeseries(
     query: ResidenceTimeseriesQueryDto,
   ): Promise<ResidenceTimeseriesDto> {
-    const { from, to, userId } = query;
+    const { from, to, userId, manorId, statusScope = 'all' } = query;
     const { fromDate, toDate } = this.validateDateRange(from, to);
+
+    const residenceStatusFilter =
+      statusScope === 'planned'
+        ? 'PLANNED'
+        : statusScope === 'canceled'
+          ? 'CANCELED'
+          : undefined;
 
     const stays = await this.prisma.residenceStay.findMany({
       where: {
         date: { gte: fromDate, lt: toDate },
         ...(userId ? { userId } : {}),
+        ...(manorId ? { manorId } : {}),
+        ...(residenceStatusFilter ? { status: residenceStatusFilter } : {}),
       },
       select: {
         date: true,
@@ -695,16 +713,26 @@ export class ReportsService {
       from,
       to,
       userId,
+      manorId,
+      statusScope = 'all',
       page = 1,
       pageSize = 25,
       sort = 'date:desc',
     } = query;
     const { fromDate, toDate } = this.validateDateRange(from, to);
     const sortDirection = sort === 'date:asc' ? 'asc' : 'desc';
+    const residenceStatusFilter =
+      statusScope === 'planned'
+        ? 'PLANNED'
+        : statusScope === 'canceled'
+          ? 'CANCELED'
+          : undefined;
 
     const where: Prisma.ResidenceStayWhereInput = {
       date: { gte: fromDate, lt: toDate },
       ...(userId ? { userId } : {}),
+      ...(manorId ? { manorId } : {}),
+      ...(residenceStatusFilter ? { status: residenceStatusFilter } : {}),
     };
 
     const [total, stays] = await Promise.all([
@@ -740,14 +768,22 @@ export class ReportsService {
   async getTransportsSummary(
     query: TransportsQueryDto,
   ): Promise<TransportsSummaryDto> {
-    const { from, to, userId } = query;
+    const { from, to, userId, templateId, statusScope = 'all' } = query;
     const { fromDate, toDate } = this.validateDateRange(from, to);
+    const bookingStatusFilter =
+      statusScope === 'confirmed'
+        ? 'CONFIRMED'
+        : statusScope === 'cancelled'
+          ? 'CANCELLED'
+          : undefined;
 
     const bookings = await this.prisma.transportBooking.findMany({
       where: {
         ...(userId ? { userId } : {}),
+        ...(bookingStatusFilter ? { status: bookingStatusFilter } : {}),
         occurrence: {
           departureAt: { gte: fromDate, lt: toDate },
+          ...(templateId ? { templateId } : {}),
         },
       },
       select: {
@@ -781,14 +817,22 @@ export class ReportsService {
   async getTransportsTimeseries(
     query: TransportsTimeseriesQueryDto,
   ): Promise<TransportsTimeseriesDto> {
-    const { from, to, userId } = query;
+    const { from, to, userId, templateId, statusScope = 'all' } = query;
     const { fromDate, toDate } = this.validateDateRange(from, to);
+    const bookingStatusFilter =
+      statusScope === 'confirmed'
+        ? 'CONFIRMED'
+        : statusScope === 'cancelled'
+          ? 'CANCELLED'
+          : undefined;
 
     const bookings = await this.prisma.transportBooking.findMany({
       where: {
         ...(userId ? { userId } : {}),
+        ...(bookingStatusFilter ? { status: bookingStatusFilter } : {}),
         occurrence: {
           departureAt: { gte: fromDate, lt: toDate },
+          ...(templateId ? { templateId } : {}),
         },
       },
       select: {
@@ -847,17 +891,27 @@ export class ReportsService {
       from,
       to,
       userId,
+      templateId,
+      statusScope = 'all',
       page = 1,
       pageSize = 25,
       sort = 'date:desc',
     } = query;
     const { fromDate, toDate } = this.validateDateRange(from, to);
     const sortDirection = sort === 'date:asc' ? 'asc' : 'desc';
+    const bookingStatusFilter =
+      statusScope === 'confirmed'
+        ? 'CONFIRMED'
+        : statusScope === 'cancelled'
+          ? 'CANCELLED'
+          : undefined;
 
     const where: Prisma.TransportBookingWhereInput = {
       ...(userId ? { userId } : {}),
+      ...(bookingStatusFilter ? { status: bookingStatusFilter } : {}),
       occurrence: {
         departureAt: { gte: fromDate, lt: toDate },
+        ...(templateId ? { templateId } : {}),
       },
     };
 

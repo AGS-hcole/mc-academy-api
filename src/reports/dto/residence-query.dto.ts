@@ -1,4 +1,4 @@
-import { IsISO8601, IsOptional, IsUUID } from 'class-validator';
+import { IsISO8601, IsOptional, IsUUID, IsIn } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class ResidenceQueryDto {
@@ -20,4 +20,18 @@ export class ResidenceQueryDto {
   @IsOptional()
   @IsUUID()
   userId?: string;
+
+  @ApiPropertyOptional({ description: 'Filter by manor ID (UUID)' })
+  @IsOptional()
+  @IsUUID()
+  manorId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Residence status filter',
+    enum: ['all', 'planned', 'canceled'],
+    default: 'all',
+  })
+  @IsOptional()
+  @IsIn(['all', 'planned', 'canceled'])
+  statusScope?: 'all' | 'planned' | 'canceled';
 }

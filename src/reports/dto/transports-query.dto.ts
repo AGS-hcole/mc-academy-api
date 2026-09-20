@@ -1,4 +1,4 @@
-import { IsISO8601, IsOptional, IsUUID } from 'class-validator';
+import { IsISO8601, IsOptional, IsUUID, IsIn } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class TransportsQueryDto {
@@ -20,4 +20,20 @@ export class TransportsQueryDto {
   @IsOptional()
   @IsUUID()
   userId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter by transport template ID (UUID)',
+  })
+  @IsOptional()
+  @IsUUID()
+  templateId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Transport booking status filter',
+    enum: ['all', 'confirmed', 'cancelled'],
+    default: 'all',
+  })
+  @IsOptional()
+  @IsIn(['all', 'confirmed', 'cancelled'])
+  statusScope?: 'all' | 'confirmed' | 'cancelled';
 }
