@@ -70,8 +70,12 @@ export class ResidenceItemDto {
   @ApiProperty()
   date: string;
 
-  @ApiProperty({ nullable: true })
-  manorName: string | null;
+  @ApiProperty({
+    nullable: true,
+    type: Object,
+    example: { id: 'uuid', name: 'Manor A' },
+  })
+  manor: { id: string; name: string } | null;
 
   @ApiProperty({ type: ResidenceListUserDto })
   user: ResidenceListUserDto;

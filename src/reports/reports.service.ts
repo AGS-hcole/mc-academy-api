@@ -744,7 +744,7 @@ export class ReportsService {
         where,
         include: {
           user: { select: { id: true, firstname: true, lastname: true } },
-          manor: { select: { name: true } },
+          manor: { select: { id: true, name: true } },
         },
         orderBy: { date: sortDirection },
         skip: (page - 1) * pageSize,
@@ -756,7 +756,12 @@ export class ReportsService {
       items: stays.map(stay => ({
         id: stay.id,
         date: stay.date.toISOString(),
-        manorName: stay.manor?.name ?? null,
+        manor: stay.manor
+          ? {
+              id: stay.manor.id,
+              name: stay.manor.name,
+            }
+          : null,
         user: stay.user,
         status: stay.status,
         overCapacity: stay.overCapacity,
@@ -930,7 +935,12 @@ export class ReportsService {
           occurrence: {
             include: {
               template: {
-                select: { name: true, fromLabel: true, toLabel: true },
+                select: {
+                  id: true,
+                  name: true,
+                  fromLabel: true,
+                  toLabel: true,
+                },
               },
             },
           },
@@ -945,9 +955,14 @@ export class ReportsService {
       items: bookings.map(booking => ({
         id: booking.id,
         departureAt: booking.occurrence.departureAt.toISOString(),
-        templateName: booking.occurrence.template?.name ?? null,
-        fromLabel: booking.occurrence.template?.fromLabel ?? null,
-        toLabel: booking.occurrence.template?.toLabel ?? null,
+        template: booking.occurrence.template
+          ? {
+              id: booking.occurrence.template.id,
+              name: booking.occurrence.template.name,
+              fromLabel: booking.occurrence.template.fromLabel,
+              toLabel: booking.occurrence.template.toLabel,
+            }
+          : null,
         user: booking.user,
         status: booking.status,
         seats: booking.seats,

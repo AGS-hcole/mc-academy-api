@@ -73,14 +73,22 @@ export class TransportsItemDto {
   @ApiProperty()
   departureAt: string;
 
-  @ApiProperty({ nullable: true })
-  templateName: string | null;
-
-  @ApiProperty({ nullable: true })
-  fromLabel: string | null;
-
-  @ApiProperty({ nullable: true })
-  toLabel: string | null;
+  @ApiProperty({
+    nullable: true,
+    type: Object,
+    example: {
+      id: 'uuid',
+      name: 'Morning Shuttle',
+      fromLabel: 'A',
+      toLabel: 'B',
+    },
+  })
+  template: {
+    id: string;
+    name: string;
+    fromLabel: string;
+    toLabel: string;
+  } | null;
 
   @ApiProperty({ type: TransportsListUserDto })
   user: TransportsListUserDto;
