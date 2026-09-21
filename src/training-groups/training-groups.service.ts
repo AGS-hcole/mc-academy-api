@@ -58,8 +58,41 @@ export class TrainingGroupsService {
     return this.prisma.trainingGroup.findMany({
       orderBy: { name: 'asc' },
       include: {
-        site: { select: { id: true, name: true } },
-        _count: { select: { members: true, schedules: true } },
+        site: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+
+        members: {
+          select: {
+            user: {
+              select: {
+                id: true,
+                firstname: true,
+                lastname: true,
+              },
+            },
+          },
+        },
+
+        schedules: {
+          select: {
+            id: true,
+            dayOfWeek: true,
+            startTime: true,
+            endTime: true,
+          },
+          orderBy: [{ dayOfWeek: 'asc' }, { startTime: 'asc' }],
+        },
+
+        _count: {
+          select: {
+            members: true,
+            schedules: true,
+          },
+        },
       },
     });
   }
