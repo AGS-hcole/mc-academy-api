@@ -98,5 +98,5 @@ export class CreateUserDto {
   @IsOptional()
   @IsArray()
   @IsUUID('4', { each: true })
-  playerIds?: string[];
+  childUserIds?: string[];
 }

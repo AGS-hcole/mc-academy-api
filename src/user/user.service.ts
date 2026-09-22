@@ -337,7 +337,7 @@ export class UserService {
     }
   }
 
-  async addPlayerToParent(parentId: string, playerId: string) {
+  async addChildToParent(parentId: string, childUserId: string) {
     try {
       await this.prisma.parentChild.create({
         data: { parentUserId: parentId, childUserId: playerId },
@@ -348,7 +348,7 @@ export class UserService {
     }
   }
 
-  async removePlayerFromParent(parentId: string, playerId: string) {
+  async removeChildFromParent(parentId: string, childUserId: string) {
     try {
       await this.prisma.parentChild.delete({
         where: {
