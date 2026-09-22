@@ -1,5 +1,6 @@
 import {
   Controller,
+  ForbiddenException,
   Get,
   Post,
   Body,
@@ -26,8 +27,9 @@ import { User } from './entities/user.entity';
 import { AuthGuard } from 'src/auth/guards/auth.guards';
 import { GetUser } from 'src/auth/decorators/get-user.decorator';
 import { AdminGuard } from 'src/auth/guards/admin.guard';
-import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { Roles } from 'src/auth/decorators/roles.decorator';
+import { Role } from '@prisma/client';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
 
 @ApiBearerAuth()
 @ApiTags('Users')
@@ -55,7 +57,7 @@ export class UserController {
 
   @Get('lookup')
   @UseGuards(RolesGuard)
-  @Roles('admin', 'parent')
+  @Roles(Role.admin, Role.parent)
   @ApiOperation({ summary: 'Lookup users with filters (Admin only)' })
   @ApiQuery({ name: 'role', required: false, description: 'Filter by role' })
   @ApiQuery({
@@ -111,7 +113,8 @@ export class UserController {
   @UseGuards(AdminGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Associate a child user to a parent user (Admin only)',
+    summary:
+      'Associate a child user to a parent user (Admin only, legacy route name)',
   })
   @ApiParam({ name: 'id', description: 'Parent user ID' })
   @ApiParam({ name: 'playerId', description: 'Child user ID' })
@@ -126,7 +129,8 @@ export class UserController {
   @UseGuards(AdminGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Remove a child user association from a parent user (Admin only)',
+    summary:
+      'Remove a child user association from a parent user (Admin only, legacy route name)',
   })
   @ApiParam({ name: 'id', description: 'Parent user ID' })
   @ApiParam({ name: 'playerId', description: 'Child user ID' })
@@ -153,6 +157,24 @@ export class ParentChildrenController {
   })
   getChildren(@GetUser() user: User) {
     if (user.role !== 'parent') {
+      throw new ForbiddenException('Parent access required');
+    }
+
+    return this.userService.getChildrenBrief(user.id);
+  }
+}
+
+@ApiBearerAuth()
+@ApiTags('Parent')
+@Controller('parent')
+export class ParentChildrenController {
+  constructor(private readonly userService: UserService) {}
+
+  @Get('children')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: "Get current parent's linked children" })
+  async getChildren(@GetUser() user: any) {
+    if (user?.role !== 'parent') {
       throw new ForbiddenException('Parent access required');
     }
 

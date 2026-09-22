@@ -5,9 +5,10 @@ import {
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
+import { Role } from '@prisma/client';
 import { ReportsService } from './reports.service';
-import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { RolesGuard } from '../auth/guards/roles.guard';
 import {
   SessionsQueryDto,
   SessionsTimeseriesQueryDto,
@@ -35,7 +36,7 @@ import {
 @ApiBearerAuth()
 @Controller('reports/sessions')
 @UseGuards(RolesGuard)
-@Roles('admin', 'parent')
+@Roles(Role.admin, Role.parent)
 export class ReportsController {
   constructor(private readonly reportsService: ReportsService) {}
 
@@ -83,7 +84,7 @@ export class ReportsController {
 @ApiBearerAuth()
 @Controller('reports/ratings')
 @UseGuards(RolesGuard)
-@Roles('admin', 'parent')
+@Roles(Role.admin, Role.parent)
 export class RatingsReportsController {
   constructor(private readonly reportsService: ReportsService) {}
 
@@ -106,32 +107,31 @@ export class RatingsReportsController {
 @ApiBearerAuth()
 @Controller('reports/residence')
 @UseGuards(RolesGuard)
-@Roles('admin', 'parent')
+@Roles(Role.admin, Role.parent)
 export class ResidenceReportsController {
   constructor(private readonly reportsService: ReportsService) {}
 
   @Get('summary')
-  @ApiOperation({ summary: 'Get residence (manor) stays analytics summary' })
+  @ApiOperation({ summary: 'Get residence analytics summary' })
   @ApiResponse({
     status: 200,
-    description:
-      'Returns summary statistics for residence stays (nights) in the date range',
+    description: 'Returns summary statistics for residence stays in date range',
     type: ResidenceSummaryDto,
   })
-  async getResidenceSummary(
+  async getSummary(
     @Query() query: ResidenceQueryDto,
   ): Promise<ResidenceSummaryDto> {
     return this.reportsService.getResidenceSummary(query);
   }
 
   @Get('timeseries')
-  @ApiOperation({ summary: 'Get residence stays analytics time series' })
+  @ApiOperation({ summary: 'Get residence analytics time series' })
   @ApiResponse({
     status: 200,
-    description: 'Returns time series data of nights stayed, bucketed by day',
+    description: 'Returns residence daily time series in date range',
     type: ResidenceTimeseriesDto,
   })
-  async getResidenceTimeseries(
+  async getTimeseries(
     @Query() query: ResidenceTimeseriesQueryDto,
   ): Promise<ResidenceTimeseriesDto> {
     return this.reportsService.getResidenceTimeseries(query);
@@ -141,10 +141,10 @@ export class ResidenceReportsController {
   @ApiOperation({ summary: 'Get paginated list of residence stays' })
   @ApiResponse({
     status: 200,
-    description: 'Returns paginated list of residence stays',
+    description: 'Returns paginated residence stays in date range',
     type: ResidenceListDto,
   })
-  async getResidenceList(
+  async getList(
     @Query() query: ResidenceListQueryDto,
   ): Promise<ResidenceListDto> {
     return this.reportsService.getResidenceList(query);
@@ -155,32 +155,32 @@ export class ResidenceReportsController {
 @ApiBearerAuth()
 @Controller('reports/transports')
 @UseGuards(RolesGuard)
-@Roles('admin', 'parent')
+@Roles(Role.admin, Role.parent)
 export class TransportsReportsController {
   constructor(private readonly reportsService: ReportsService) {}
 
   @Get('summary')
-  @ApiOperation({ summary: 'Get transport bookings analytics summary' })
+  @ApiOperation({ summary: 'Get transport analytics summary' })
   @ApiResponse({
     status: 200,
     description:
-      'Returns summary statistics for transport bookings in the date range',
+      'Returns summary statistics for transport bookings in date range',
     type: TransportsSummaryDto,
   })
-  async getTransportsSummary(
+  async getSummary(
     @Query() query: TransportsQueryDto,
   ): Promise<TransportsSummaryDto> {
     return this.reportsService.getTransportsSummary(query);
   }
 
   @Get('timeseries')
-  @ApiOperation({ summary: 'Get transport bookings analytics time series' })
+  @ApiOperation({ summary: 'Get transport analytics time series' })
   @ApiResponse({
     status: 200,
-    description: 'Returns time series data of bookings, bucketed by day',
+    description: 'Returns transport daily time series in date range',
     type: TransportsTimeseriesDto,
   })
-  async getTransportsTimeseries(
+  async getTimeseries(
     @Query() query: TransportsTimeseriesQueryDto,
   ): Promise<TransportsTimeseriesDto> {
     return this.reportsService.getTransportsTimeseries(query);
@@ -190,10 +190,10 @@ export class TransportsReportsController {
   @ApiOperation({ summary: 'Get paginated list of transport bookings' })
   @ApiResponse({
     status: 200,
-    description: 'Returns paginated list of transport bookings',
+    description: 'Returns paginated transport bookings in date range',
     type: TransportsListDto,
   })
-  async getTransportsList(
+  async getList(
     @Query() query: TransportsListQueryDto,
   ): Promise<TransportsListDto> {
     return this.reportsService.getTransportsList(query);

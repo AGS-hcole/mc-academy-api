@@ -9,9 +9,9 @@ import { AuthGuard } from './auth.guards';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 /**
- * Guard that restricts access to a specific child user resource for parent users.
- * Expects a `playerId` route parameter (the child's User id). Admins always pass.
- * Parents are allowed only if the playerId is linked to them via ParentChild.
+ * Guard that restricts access to a specific child resource for parent users.
+ * Expects a `playerId` route parameter (legacy route naming). Admins always pass.
+ * Parents are allowed only if the child user is linked to them.
  */
 @Injectable()
 export class ParentGuard extends AuthGuard implements CanActivate {

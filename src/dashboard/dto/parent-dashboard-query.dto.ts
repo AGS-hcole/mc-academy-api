@@ -1,22 +1,46 @@
-import { IsISO8601, IsOptional } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { IsDateString, IsOptional, IsString, Matches } from 'class-validator';
 
 export class ParentDashboardQueryDto {
   @ApiPropertyOptional({
     description:
-      'Start date of the period (ISO 8601). Defaults to the first day of the current month (Europe/Paris).',
-    example: '2026-01-01T00:00:00.000Z',
+      'Start date (inclusive) in YYYY-MM-DD (Europe/Paris). Recommended format.',
+    example: '2026-09-01',
   })
   @IsOptional()
-  @IsISO8601()
+  @IsString()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, {
+    message: 'startDate must be in YYYY-MM-DD format',
+  })
+  startDate?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'End date (inclusive) in YYYY-MM-DD (Europe/Paris). Recommended format.',
+    example: '2026-09-30',
+  })
+  @IsOptional()
+  @IsString()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, {
+    message: 'endDate must be in YYYY-MM-DD format',
+  })
+  endDate?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Legacy start datetime (ISO). Supported for backward compatibility.',
+    example: '2026-09-01T00:00:00.000Z',
+  })
+  @IsOptional()
+  @IsDateString()
   from?: string;
 
   @ApiPropertyOptional({
     description:
-      'End date of the period (ISO 8601). Defaults to now. Used as the boundary between "past" and "upcoming" items.',
-    example: '2026-01-31T23:59:59.999Z',
+      'Legacy end datetime (ISO). Supported for backward compatibility.',
+    example: '2026-09-30T23:59:59.999Z',
   })
   @IsOptional()
-  @IsISO8601()
+  @IsDateString()
   to?: string;
 }

@@ -91,8 +91,7 @@ export class CreateUserDto {
   formula?: FormulaType;
 
   @ApiPropertyOptional({
-    description:
-      'IDs of existing User accounts to associate as children (only for role=parent)',
+    description: 'Child user IDs to associate (only for role=parent)',
     type: [String],
     example: ['uuid1', 'uuid2'],
   })

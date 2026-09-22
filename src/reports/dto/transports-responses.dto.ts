@@ -1,133 +1,115 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-export class TransportsPeriodDto {
-  @ApiProperty({ description: 'Start date of the period' })
+class TransportsPeriodDto {
+  @ApiProperty()
   from: string;
 
-  @ApiProperty({ description: 'End date of the period' })
+  @ApiProperty()
   to: string;
 
-  @ApiProperty({
-    description: 'Timezone used for bucketing',
-    example: 'Europe/Paris',
-  })
+  @ApiProperty({ example: 'Europe/Paris' })
   timezone: string;
 }
 
-export class TransportsTotalsDto {
-  @ApiProperty({ description: 'Total number of bookings matching the filter' })
+class TransportsTotalsDto {
+  @ApiProperty()
   bookings: number;
 
-  @ApiProperty({ description: 'Number of confirmed bookings' })
-  confirmedBookings: number;
+  @ApiProperty()
+  confirmed: number;
 
-  @ApiProperty({ description: 'Number of cancelled bookings' })
-  cancelledBookings: number;
+  @ApiProperty()
+  cancelled: number;
 
-  @ApiProperty({ description: 'Number of unique users with a booking' })
+  @ApiProperty()
   uniqueUsers: number;
 
-  @ApiProperty({ description: 'Number of distinct transport occurrences used' })
-  occurrencesUsed: number;
-
-  @ApiProperty({ description: 'Total number of seats booked (confirmed only)' })
-  seatsBooked: number;
+  @ApiProperty()
+  uniqueOccurrences: number;
 }
 
 export class TransportsSummaryDto {
-  @ApiProperty({ description: 'Period information', type: TransportsPeriodDto })
+  @ApiProperty({ type: TransportsPeriodDto })
   period: TransportsPeriodDto;
 
-  @ApiProperty({ description: 'Summary totals', type: TransportsTotalsDto })
+  @ApiProperty({ type: TransportsTotalsDto })
   totals: TransportsTotalsDto;
 }
 
-export class TransportsBucketDto {
-  @ApiProperty({ description: 'Date of the bucket (YYYY-MM-DD format)' })
+class TransportsBucketDto {
+  @ApiProperty()
   date: string;
 
-  @ApiProperty({ description: 'Total bookings in this bucket' })
+  @ApiProperty()
   total: number;
 
-  @ApiProperty({ description: 'Confirmed bookings in this bucket' })
+  @ApiProperty()
   confirmed: number;
 
-  @ApiProperty({ description: 'Cancelled bookings in this bucket' })
+  @ApiProperty()
   cancelled: number;
 }
 
 export class TransportsTimeseriesDto {
-  @ApiProperty({
-    description: 'Time series buckets',
-    type: [TransportsBucketDto],
-  })
+  @ApiProperty({ type: [TransportsBucketDto] })
   buckets: TransportsBucketDto[];
 }
 
-export class TransportTemplateBriefDto {
-  @ApiProperty({ description: 'Transport template ID' })
+class TransportsListUserDto {
+  @ApiProperty()
   id: string;
 
-  @ApiProperty({ description: 'Transport template name' })
-  name: string;
-
-  @ApiProperty({ description: 'Origin label' })
-  fromLabel: string;
-
-  @ApiProperty({ description: 'Destination label' })
-  toLabel: string;
-}
-
-export class TransportUserBriefDto {
-  @ApiProperty({ description: 'User ID' })
-  id: string;
-
-  @ApiProperty({ description: 'User first name' })
+  @ApiProperty()
   firstname: string;
 
-  @ApiProperty({ description: 'User last name' })
+  @ApiProperty()
   lastname: string;
 }
 
-export class TransportBookingItemDto {
-  @ApiProperty({ description: 'Booking ID' })
+export class TransportsItemDto {
+  @ApiProperty()
   id: string;
 
-  @ApiProperty({ description: 'Occurrence departure date/time (ISO string)' })
+  @ApiProperty()
   departureAt: string;
 
   @ApiProperty({
-    description: 'Transport template information',
-    type: TransportTemplateBriefDto,
+    nullable: true,
+    type: Object,
+    example: {
+      id: 'uuid',
+      name: 'Morning Shuttle',
+      fromLabel: 'A',
+      toLabel: 'B',
+    },
   })
-  template: TransportTemplateBriefDto;
+  template: {
+    id: string;
+    name: string;
+    fromLabel: string;
+    toLabel: string;
+  } | null;
 
-  @ApiProperty({ description: 'User information', type: TransportUserBriefDto })
-  user: TransportUserBriefDto;
+  @ApiProperty({ type: TransportsListUserDto })
+  user: TransportsListUserDto;
 
-  @ApiProperty({ description: 'Number of seats booked' })
+  @ApiProperty({ enum: ['CONFIRMED', 'CANCELLED'] })
+  status: 'CONFIRMED' | 'CANCELLED';
+
+  @ApiProperty()
   seats: number;
-
-  @ApiProperty({
-    description: 'Booking status',
-    enum: ['CONFIRMED', 'CANCELLED'],
-  })
-  status: string;
 }
 
 export class TransportsListDto {
-  @ApiProperty({
-    description: 'List of bookings',
-    type: [TransportBookingItemDto],
-  })
-  items: TransportBookingItemDto[];
+  @ApiProperty({ type: [TransportsItemDto] })
+  items: TransportsItemDto[];
 
-  @ApiProperty({ description: 'Total number of bookings' })
+  @ApiProperty()
   total: number;
 
-  @ApiProperty({ description: 'Current page number' })
+  @ApiProperty()
   page: number;
 
-  @ApiProperty({ description: 'Page size' })
+  @ApiProperty()
   pageSize: number;
 }

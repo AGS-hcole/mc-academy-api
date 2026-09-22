@@ -9,6 +9,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AttendanceStatus, SessionSlot, User } from '@prisma/client';
 import { isBefore, startOfDay, endOfDay } from 'date-fns';
 import { CreateSessionDto, UpdateSessionDto, AdminRegisterDto } from './dto';
+import { computeOutOfContract } from 'src/common/utils/out-of-contract.util';
 
 //const tz = 'Europe/Paris';
 
@@ -217,9 +218,7 @@ export class SessionsService {
       throw new BadRequestException('Invalid or missing status');
     }
 
-    const outOfContract =
-      (user.formula === 'MORNING' && session.slot === 'PM') ||
-      (user.formula === 'AFTERNOON' && session.slot === 'AM');
+    const outOfContract = computeOutOfContract(user.formula, session.slot);
 
     // ✅ Omettre les clés undefined dans update/create
     const updateData: any = {
@@ -263,9 +262,7 @@ export class SessionsService {
     if (!user) throw new NotFoundException('User not found');
 
     // Admin can register anyone without restrictions (bypass cutoff and formula)
-    const outOfContract =
-      (user.formula === 'MORNING' && session.slot === 'PM') ||
-      (user.formula === 'AFTERNOON' && session.slot === 'AM');
+    const outOfContract = computeOutOfContract(user.formula, session.slot);
 
     return this.prisma.attendance.upsert({
       where: { sessionId_userId: { sessionId, userId: dto.userId } },

@@ -1,112 +1,105 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-export class ResidencePeriodDto {
-  @ApiProperty({ description: 'Start date of the period' })
+class ResidencePeriodDto {
+  @ApiProperty()
   from: string;
 
-  @ApiProperty({ description: 'End date of the period' })
+  @ApiProperty()
   to: string;
 
-  @ApiProperty({
-    description: 'Timezone used for bucketing',
-    example: 'Europe/Paris',
-  })
+  @ApiProperty({ example: 'Europe/Paris' })
   timezone: string;
 }
 
-export class ResidenceTotalsDto {
-  @ApiProperty({ description: 'Total number of nights stayed' })
+class ResidenceTotalsDto {
+  @ApiProperty()
   nights: number;
 
-  @ApiProperty({ description: 'Number of unique users with a stay' })
+  @ApiProperty()
+  planned: number;
+
+  @ApiProperty()
+  canceled: number;
+
+  @ApiProperty()
   uniqueUsers: number;
-
-  @ApiProperty({ description: 'Number of distinct manors used' })
-  manorsUsed: number;
-
-  @ApiProperty({ description: 'Number of stays flagged as over capacity' })
-  overCapacityCount: number;
 }
 
 export class ResidenceSummaryDto {
-  @ApiProperty({ description: 'Period information', type: ResidencePeriodDto })
+  @ApiProperty({ type: ResidencePeriodDto })
   period: ResidencePeriodDto;
 
-  @ApiProperty({ description: 'Summary totals', type: ResidenceTotalsDto })
+  @ApiProperty({ type: ResidenceTotalsDto })
   totals: ResidenceTotalsDto;
 }
 
-export class ResidenceBucketDto {
-  @ApiProperty({ description: 'Date of the bucket (YYYY-MM-DD format)' })
+class ResidenceBucketDto {
+  @ApiProperty()
   date: string;
 
-  @ApiProperty({ description: 'Number of nights stayed in this bucket' })
-  nights: number;
+  @ApiProperty()
+  total: number;
+
+  @ApiProperty()
+  planned: number;
+
+  @ApiProperty()
+  canceled: number;
 }
 
 export class ResidenceTimeseriesDto {
-  @ApiProperty({
-    description: 'Time series buckets',
-    type: [ResidenceBucketDto],
-  })
+  @ApiProperty({ type: [ResidenceBucketDto] })
   buckets: ResidenceBucketDto[];
 }
 
-export class ResidenceManorBriefDto {
-  @ApiProperty({ description: 'Manor ID' })
+class ResidenceListUserDto {
+  @ApiProperty()
   id: string;
 
-  @ApiProperty({ description: 'Manor name' })
-  name: string;
-}
-
-export class ResidenceUserBriefDto {
-  @ApiProperty({ description: 'User ID' })
-  id: string;
-
-  @ApiProperty({ description: 'User first name' })
+  @ApiProperty()
   firstname: string;
 
-  @ApiProperty({ description: 'User last name' })
+  @ApiProperty()
   lastname: string;
 }
 
-export class ResidenceStayItemDto {
-  @ApiProperty({ description: 'Residence stay ID' })
+export class ResidenceItemDto {
+  @ApiProperty()
   id: string;
 
-  @ApiProperty({ description: 'Stay date (ISO string)' })
+  @ApiProperty()
   date: string;
 
   @ApiProperty({
-    description: 'Manor information',
-    type: ResidenceManorBriefDto,
+    nullable: true,
+    type: Object,
+    example: { id: 'uuid', name: 'Manor A' },
   })
-  manor: ResidenceManorBriefDto;
+  manor: { id: string; name: string } | null;
 
-  @ApiProperty({ description: 'User information', type: ResidenceUserBriefDto })
-  user: ResidenceUserBriefDto;
+  @ApiProperty({ type: ResidenceListUserDto })
+  user: ResidenceListUserDto;
 
-  @ApiProperty({ description: 'Stay status', enum: ['PLANNED', 'CANCELED'] })
-  status: string;
+  @ApiProperty({ enum: ['PLANNED', 'CANCELED'] })
+  status: 'PLANNED' | 'CANCELED';
 
-  @ApiProperty({ description: 'Whether the stay was over manor capacity' })
+  @ApiProperty()
   overCapacity: boolean;
 
-  @ApiProperty({ description: 'Whether the stay was created by an admin' })
+  @ApiProperty()
   createdByAdmin: boolean;
 }
 
 export class ResidenceListDto {
-  @ApiProperty({ description: 'List of stays', type: [ResidenceStayItemDto] })
-  items: ResidenceStayItemDto[];
+  @ApiProperty({ type: [ResidenceItemDto] })
+  items: ResidenceItemDto[];
 
-  @ApiProperty({ description: 'Total number of stays' })
+  @ApiProperty()
   total: number;
 
-  @ApiProperty({ description: 'Current page number' })
+  @ApiProperty()
   page: number;
 
-  @ApiProperty({ description: 'Page size' })
+  @ApiProperty()
   pageSize: number;
 }

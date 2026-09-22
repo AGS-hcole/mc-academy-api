@@ -27,7 +27,7 @@ export class ResidenceQueryDto {
   manorId?: string;
 
   @ApiPropertyOptional({
-    description: 'Stay status filter',
+    description: 'Residence status filter',
     enum: ['all', 'planned', 'canceled'],
     default: 'all',
   })

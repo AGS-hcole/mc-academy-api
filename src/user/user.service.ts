@@ -90,11 +90,11 @@ export class UserService {
         },
       });
 
-      if (dto.childUserIds && dto.childUserIds.length > 0) {
+      if (dto.playerIds && dto.playerIds.length > 0) {
         await this.prisma.parentChild.createMany({
-          data: dto.childUserIds.map(childUserId => ({
+          data: dto.playerIds.map(playerId => ({
             parentUserId: user.id,
-            childUserId,
+            childUserId: playerId,
           })),
           skipDuplicates: true,
         });
@@ -217,11 +217,12 @@ export class UserService {
           childrenLinks: {
             select: {
               childUserId: true,
-              childUser: {
+              child: {
                 select: {
                   id: true,
                   firstname: true,
                   lastname: true,
+                  email: true,
                   birthDate: true,
                 },
               },
@@ -270,15 +271,15 @@ export class UserService {
       if (dto.notifyWhatsApp !== undefined)
         updateData.notifyWhatsApp = dto.notifyWhatsApp;
 
-      if (dto.childUserIds !== undefined) {
+      if (dto.playerIds !== undefined) {
         await this.prisma.parentChild.deleteMany({
           where: { parentUserId: id },
         });
-        if (dto.childUserIds.length > 0) {
+        if (dto.playerIds.length > 0) {
           await this.prisma.parentChild.createMany({
-            data: dto.childUserIds.map(childUserId => ({
+            data: dto.playerIds.map(playerId => ({
               parentUserId: id,
-              childUserId,
+              childUserId: playerId,
             })),
             skipDuplicates: true,
           });
@@ -339,7 +340,7 @@ export class UserService {
   async addChildToParent(parentId: string, childUserId: string) {
     try {
       await this.prisma.parentChild.create({
-        data: { parentUserId: parentId, childUserId },
+        data: { parentUserId: parentId, childUserId: playerId },
       });
       return { ok: true };
     } catch {
@@ -351,7 +352,10 @@ export class UserService {
     try {
       await this.prisma.parentChild.delete({
         where: {
-          parentUserId_childUserId: { parentUserId: parentId, childUserId },
+          parentUserId_childUserId: {
+            parentUserId: parentId,
+            childUserId: playerId,
+          },
         },
       });
       return { ok: true };
@@ -360,7 +364,7 @@ export class UserService {
     }
   }
 
-  async getParentChildIds(parentId: string): Promise<string[]> {
+  async getParentPlayerIds(parentId: string): Promise<string[]> {
     const links = await this.prisma.parentChild.findMany({
       where: { parentUserId: parentId },
       select: { childUserId: true },
@@ -372,7 +376,7 @@ export class UserService {
     const links = await this.prisma.parentChild.findMany({
       where: { parentUserId: parentId },
       select: {
-        childUser: {
+        child: {
           select: {
             id: true,
             firstname: true,
@@ -380,12 +384,15 @@ export class UserService {
           },
         },
       },
-      orderBy: {
-        childUser: { lastname: 'asc' },
-      },
     });
 
-    return links.map(l => l.childUser);
+    return links
+      .map(link => link.child)
+      .sort((a, b) => {
+        const lastnameCmp = a.lastname.localeCompare(b.lastname);
+        if (lastnameCmp !== 0) return lastnameCmp;
+        return a.firstname.localeCompare(b.firstname);
+      });
   }
 
   // -----------------------------------------------------------------------------------------------------

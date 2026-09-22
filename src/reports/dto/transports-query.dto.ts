@@ -29,7 +29,7 @@ export class TransportsQueryDto {
   templateId?: string;
 
   @ApiPropertyOptional({
-    description: 'Booking status filter',
+    description: 'Transport booking status filter',
     enum: ['all', 'confirmed', 'cancelled'],
     default: 'all',
   })

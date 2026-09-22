@@ -1,11 +1,7 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { toZonedTime } from 'date-fns-tz';
-import { startOfMonth } from 'date-fns';
-import {
-  ParentDashboardResponseDto,
-  ChildDashboardDto,
-} from './dto/parent-dashboard-response.dto';
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { DateTime } from 'luxon';
+import { PrismaService } from 'src/prisma/prisma.service';
+import { ParentDashboardQueryDto, ParentDashboardResponseDto } from './dto';
 
 const TIMEZONE = 'Europe/Paris';
 
@@ -13,165 +9,257 @@ const TIMEZONE = 'Europe/Paris';
 export class ParentDashboardService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getChildrenDashboard(
+  async getParentDashboard(
     parentUserId: string,
-    fromString?: string,
-    toString?: string,
+    query: ParentDashboardQueryDto,
   ): Promise<ParentDashboardResponseDto> {
-    const now = new Date();
+    const parsedPeriod = this.parsePeriod(query);
 
-    // Default period: from the start of the current month (Europe/Paris) to now
-    const fromDate = fromString
-      ? new Date(fromString)
-      : startOfMonth(toZonedTime(now, TIMEZONE));
-    const toDate = toString ? new Date(toString) : now;
-
-    // "now" boundary used to split past/upcoming items is the min of `to` and the actual current time
-    const nowBoundary = toDate < now ? toDate : now;
-
-    // Fetch children linked to the connected parent
-    const links = await this.prisma.parentChild.findMany({
+    const childLinks = await this.prisma.parentChild.findMany({
       where: { parentUserId },
       select: {
-        childUser: {
+        childUserId: true,
+        child: {
           select: {
             id: true,
             firstname: true,
             lastname: true,
-            birthDate: true,
+            email: true,
           },
         },
       },
-      orderBy: {
-        childUser: { lastname: 'asc' },
-      },
     });
 
-    const children: ChildDashboardDto[] = await Promise.all(
-      links.map(link =>
-        this.buildChildDashboard(link.childUser, fromDate, nowBoundary),
-      ),
+    childLinks.sort((a, b) => {
+      const lastnameCmp = a.child.lastname.localeCompare(b.child.lastname);
+      if (lastnameCmp !== 0) return lastnameCmp;
+      return a.child.firstname.localeCompare(b.child.firstname);
+    });
+
+    const childIds = childLinks.map(link => link.childUserId);
+
+    if (childIds.length === 0) {
+      return {
+        period: {
+          startDate: parsedPeriod.startDate,
+          endDate: parsedPeriod.endDate,
+          timezone: TIMEZONE,
+        },
+        generatedAt: new Date().toISOString(),
+        children: [],
+      };
+    }
+
+    const [
+      sessionsDone,
+      ratingsAvg,
+      transportsDone,
+      nightsDone,
+      tournamentsDone,
+      tournamentsUpcoming,
+    ] = await Promise.all([
+      this.prisma.attendance.groupBy({
+        by: ['userId'],
+        where: {
+          userId: { in: childIds },
+          status: 'YES',
+          session: {
+            isCanceled: false,
+            date: {
+              gte: parsedPeriod.startDayUtc,
+              lte: parsedPeriod.endDayUtc,
+              lt: parsedPeriod.todayStartUtc,
+            },
+          },
+        },
+        _count: { _all: true },
+      }),
+      this.prisma.sessionRating.groupBy({
+        by: ['userId'],
+        where: {
+          userId: { in: childIds },
+          session: {
+            isCanceled: false,
+            date: {
+              gte: parsedPeriod.startDayUtc,
+              lte: parsedPeriod.endDayUtc,
+              lt: parsedPeriod.todayStartUtc,
+            },
+          },
+        },
+        _avg: { score: true },
+      }),
+      this.prisma.transportBooking.groupBy({
+        by: ['userId'],
+        where: {
+          userId: { in: childIds },
+          status: 'CONFIRMED',
+          occurrence: {
+            departureAt: {
+              gte: parsedPeriod.startUtc,
+              lt: parsedPeriod.pastDateTimeEndUtc,
+            },
+          },
+        },
+        _count: { _all: true },
+      }),
+      this.prisma.residenceStay.groupBy({
+        by: ['userId'],
+        where: {
+          userId: { in: childIds },
+          status: { not: 'CANCELED' },
+          date: {
+            gte: parsedPeriod.startDayUtc,
+            lte: parsedPeriod.endDayUtc,
+            lt: parsedPeriod.todayStartUtc,
+          },
+        },
+        _count: { _all: true },
+      }),
+      this.prisma.tournamentParticipant.groupBy({
+        by: ['userId'],
+        where: {
+          userId: { in: childIds },
+          status: 'CONFIRMED',
+          tournament: {
+            endsAt: {
+              gte: parsedPeriod.startUtc,
+              lt: parsedPeriod.pastDateTimeEndUtc,
+            },
+          },
+        },
+        _count: { _all: true },
+      }),
+      this.prisma.tournamentParticipant.groupBy({
+        by: ['userId'],
+        where: {
+          userId: { in: childIds },
+          status: 'CONFIRMED',
+          tournament: {
+            startsAt: {
+              gte: parsedPeriod.upcomingStartUtc,
+              lte: parsedPeriod.periodEndUtc,
+            },
+          },
+        },
+        _count: { _all: true },
+      }),
+    ]);
+
+    const sessionsMap = new Map(
+      sessionsDone.map(row => [row.userId, row._count._all]),
+    );
+    const ratingsMap = new Map(
+      ratingsAvg.map(row => [row.userId, row._avg.score]),
+    );
+    const transportsMap = new Map(
+      transportsDone.map(row => [row.userId, row._count._all]),
+    );
+    const nightsMap = new Map(
+      nightsDone.map(row => [row.userId, row._count._all]),
+    );
+    const tournamentsDoneMap = new Map(
+      tournamentsDone.map(row => [row.userId, row._count._all]),
+    );
+    const tournamentsUpcomingMap = new Map(
+      tournamentsUpcoming.map(row => [row.userId, row._count._all]),
     );
 
     return {
       period: {
-        from: fromDate.toISOString(),
-        to: toDate.toISOString(),
+        startDate: parsedPeriod.startDate,
+        endDate: parsedPeriod.endDate,
         timezone: TIMEZONE,
       },
-      children,
+      generatedAt: new Date().toISOString(),
+      children: childLinks.map(link => ({
+        child: link.child,
+        metrics: {
+          trainingSessionsDone: sessionsMap.get(link.childUserId) ?? 0,
+          averageTrainingRating: ratingsMap.get(link.childUserId) ?? null,
+          transportsDone: transportsMap.get(link.childUserId) ?? 0,
+          residenceNightsDone: nightsMap.get(link.childUserId) ?? 0,
+          tournamentsDone: tournamentsDoneMap.get(link.childUserId) ?? 0,
+          tournamentsUpcoming:
+            tournamentsUpcomingMap.get(link.childUserId) ?? 0,
+        },
+      })),
     };
   }
 
-  private async buildChildDashboard(
-    child: {
-      id: string;
-      firstname: string;
-      lastname: string;
-      birthDate: Date | null;
-    },
-    fromDate: Date,
-    nowBoundary: Date,
-  ): Promise<ChildDashboardDto> {
-    const [
-      completedSessionsCount,
-      ratingsAgg,
-      completedTransportsCount,
-      nightsCount,
-      completedTournamentsCount,
-      upcomingTournamentsCount,
-    ] = await Promise.all([
-      // Completed training sessions: attended (YES), not canceled, in the past, within the period
-      this.prisma.attendance.count({
-        where: {
-          userId: child.id,
-          status: 'YES',
-          session: {
-            isCanceled: false,
-            date: { gte: fromDate, lte: nowBoundary },
-          },
-        },
-      }),
+  private parsePeriod(query: ParentDashboardQueryDto) {
+    const now = DateTime.now().setZone(TIMEZONE);
 
-      // Average rating received during past training sessions within the period
-      this.prisma.sessionRating.aggregate({
-        where: {
-          userId: child.id,
-          session: {
-            date: { gte: fromDate, lte: nowBoundary },
-          },
-        },
-        _avg: { score: true },
-        _count: { score: true },
-      }),
+    let start: DateTime;
+    let end: DateTime;
 
-      // Completed transports: confirmed bookings whose occurrence departure is in the past, within the period
-      this.prisma.transportBooking.count({
-        where: {
-          userId: child.id,
-          status: 'CONFIRMED',
-          occurrence: {
-            departureAt: { gte: fromDate, lte: nowBoundary },
-          },
-        },
-      }),
+    if (query.startDate || query.endDate) {
+      if (!query.startDate || !query.endDate) {
+        throw new BadRequestException(
+          'startDate and endDate must be provided together',
+        );
+      }
 
-      // Nights: non-canceled residence stays in the past, within the period
-      this.prisma.residenceStay.count({
-        where: {
-          userId: child.id,
-          status: { not: 'CANCELED' },
-          date: { gte: fromDate, lte: nowBoundary },
-        },
-      }),
+      start = this.parseLocalDay(query.startDate, 'startDate').startOf('day');
+      end = this.parseLocalDay(query.endDate, 'endDate').startOf('day');
+    } else if (query.from || query.to) {
+      if (!query.from || !query.to) {
+        throw new BadRequestException('from and to must be provided together');
+      }
 
-      // Tournaments completed: confirmed participation, tournament ended within the period (in the past)
-      this.prisma.tournamentParticipant.count({
-        where: {
-          userId: child.id,
-          status: 'CONFIRMED',
-          tournament: {
-            endsAt: { gte: fromDate, lte: nowBoundary },
-          },
-        },
-      }),
+      start = DateTime.fromISO(query.from, { zone: 'utc' })
+        .setZone(TIMEZONE)
+        .startOf('day');
+      end = DateTime.fromISO(query.to, { zone: 'utc' })
+        .setZone(TIMEZONE)
+        .startOf('day');
+    } else {
+      start = now.minus({ days: 30 }).startOf('day');
+      end = now.startOf('day');
+    }
 
-      // Tournaments upcoming: confirmed participation, tournament starts after the boundary date
-      this.prisma.tournamentParticipant.count({
-        where: {
-          userId: child.id,
-          status: 'CONFIRMED',
-          tournament: {
-            startsAt: { gt: nowBoundary },
-          },
-        },
-      }),
-    ]);
+    if (!start.isValid || !end.isValid) {
+      throw new BadRequestException('Invalid period format');
+    }
+
+    if (start > end) {
+      throw new BadRequestException(
+        'startDate must be before or equal to endDate',
+      );
+    }
+
+    const todayStart = now.startOf('day');
+    const startUtc = start.toUTC().toJSDate();
+    const nowUtc = now.toUTC().toJSDate();
+    const endExclusiveUtc = end.plus({ days: 1 }).toUTC().toJSDate();
 
     return {
-      child: {
-        id: child.id,
-        firstname: child.firstname,
-        lastname: child.lastname,
-        birthDate: child.birthDate ? child.birthDate.toISOString() : null,
-      },
-      trainingSessions: {
-        completedCount: completedSessionsCount,
-      },
-      ratings: {
-        average: ratingsAgg._avg.score,
-        count: ratingsAgg._count.score,
-      },
-      transports: {
-        completedCount: completedTransportsCount,
-      },
-      residence: {
-        nightsCount,
-      },
-      tournaments: {
-        completedCount: completedTournamentsCount,
-        upcomingCount: upcomingTournamentsCount,
-      },
+      startDate: start.toFormat('yyyy-MM-dd'),
+      endDate: end.toFormat('yyyy-MM-dd'),
+      nowUtc,
+      periodEndUtc: end.endOf('day').toUTC().toJSDate(),
+      todayStartUtc: todayStart.toUTC().toJSDate(),
+      startDayUtc: startUtc,
+      endDayUtc: end.toUTC().toJSDate(),
+      startUtc,
+      upcomingStartUtc: startUtc > nowUtc ? startUtc : nowUtc,
+      pastDateTimeEndUtc: endExclusiveUtc < nowUtc ? endExclusiveUtc : nowUtc,
+      endExclusiveUtc,
     };
+  }
+
+  private parseLocalDay(value: string, fieldName: string): DateTime {
+    const parsed = DateTime.fromFormat(value, 'yyyy-MM-dd', {
+      zone: TIMEZONE,
+      setZone: true,
+    });
+
+    if (!parsed.isValid || parsed.toFormat('yyyy-MM-dd') !== value) {
+      throw new BadRequestException(
+        `${fieldName} must be a valid calendar date in YYYY-MM-DD format`,
+      );
+    }
+
+    return parsed;
   }
 }
