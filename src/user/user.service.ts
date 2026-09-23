@@ -90,16 +90,6 @@ export class UserService {
         },
       });
 
-      if (dto.playerIds && dto.playerIds.length > 0) {
-        await this.prisma.parentChild.createMany({
-          data: dto.playerIds.map(playerId => ({
-            parentUserId: user.id,
-            childUserId: playerId,
-          })),
-          skipDuplicates: true,
-        });
-      }
-
       await this.sendWelcomeEmailToUser(user);
 
       return user;
@@ -271,21 +261,6 @@ export class UserService {
       if (dto.notifyWhatsApp !== undefined)
         updateData.notifyWhatsApp = dto.notifyWhatsApp;
 
-      if (dto.playerIds !== undefined) {
-        await this.prisma.parentChild.deleteMany({
-          where: { parentUserId: id },
-        });
-        if (dto.playerIds.length > 0) {
-          await this.prisma.parentChild.createMany({
-            data: dto.playerIds.map(playerId => ({
-              parentUserId: id,
-              childUserId: playerId,
-            })),
-            skipDuplicates: true,
-          });
-        }
-      }
-
       const updatedUser = await this.prisma.user.update({
         where: { id },
         data: updateData,
@@ -340,7 +315,7 @@ export class UserService {
   async addChildToParent(parentId: string, childUserId: string) {
     try {
       await this.prisma.parentChild.create({
-        data: { parentUserId: parentId, childUserId: playerId },
+        data: { parentUserId: parentId, childUserId: childUserId },
       });
       return { ok: true };
     } catch {
@@ -354,7 +329,7 @@ export class UserService {
         where: {
           parentUserId_childUserId: {
             parentUserId: parentId,
-            childUserId: playerId,
+            childUserId: childUserId,
           },
         },
       });
