@@ -14,10 +14,7 @@ import {
 } from '@nestjs/swagger';
 import { AuthGuard } from 'src/auth/guards/auth.guards';
 import { AdminGuard } from 'src/auth/guards/admin.guard';
-import { GetUser } from 'src/auth/decorators/get-user.decorator';
-import { User } from 'src/user/entities/user.entity';
 import { AdminDashboardService } from './admin-dashboard.service';
-import { ParentDashboardService } from './parent-dashboard.service';
 import { AdminDashboardQueryDto } from './dto/admin-dashboard-query.dto';
 import { AdminDashboardResponseDto } from './dto/admin-dashboard-response.dto';
 import { ParentDashboardService } from './parent-dashboard.service';
