@@ -72,6 +72,13 @@ To get started with the application, follow these steps:
 - Admin registration
 - Upcoming sessions list
 - Session filtering by date, site, slot
+- `POST /api/sessions/trigger-reapply` (authenticated admin only): reapply active
+  training group members to existing sessions with a JSON body containing
+  `startDate` and `endDate` in `YYYY-MM-DD` format (both inclusive, start before or
+  equal to end). Returns `{ groups, candidates, created }`. Only missing
+  registrations are created with status `YES`; existing registrations (including
+  their RSVP status) remain unchanged. Canceled sessions are excluded, and no
+  sessions are generated or published.
 
 ### Reporting & Analytics (Admin Only)
 - **Summary Statistics**: Get aggregate session data over date ranges
