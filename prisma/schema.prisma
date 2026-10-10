@@ -611,3 +611,16 @@ model ParentChild {
   @@index([parentUserId])
   @@index([childUserId])
 }
+
+// Durable, per-recipient delivery queue, committed with the withdrawal.
+model SessionWithdrawalEmail {
+  id           String   @id @default(uuid())
+  recipient    String
+  replacements Json
+  createdAt    DateTime @default(now())
+  sentAt       DateTime?
+  availableAt  DateTime @default(now())
+  attempts     Int      @default(0)
+
+  @@index([sentAt, availableAt])
+}

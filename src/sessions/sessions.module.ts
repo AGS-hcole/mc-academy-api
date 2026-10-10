@@ -9,11 +9,14 @@ import { AuthModule } from 'src/auth/auth.module';
 import { EmailService } from 'src/common/email.service';
 import { TrainingGroupsModule } from 'src/training-groups/training-groups.module';
 
+import { SessionWithdrawalService } from './session-withdrawal.service';
+
 @Module({
   controllers: [SessionsController],
   imports: [AuthModule, TrainingGroupsModule],
   providers: [
     SessionsService,
+    SessionWithdrawalService,
     SessionsCron,
     PrismaService,
     NotificationsService,

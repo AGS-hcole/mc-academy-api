@@ -9,13 +9,17 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AttendanceStatus, SessionSlot, User } from '@prisma/client';
 import { isBefore, startOfDay, endOfDay } from 'date-fns';
 import { CreateSessionDto, UpdateSessionDto, AdminRegisterDto } from './dto';
+import { SessionWithdrawalService } from './session-withdrawal.service';
 import { computeOutOfContract } from 'src/common/utils/out-of-contract.util';
 
 //const tz = 'Europe/Paris';
 
 @Injectable()
 export class SessionsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private withdrawals: SessionWithdrawalService,
+  ) {}
 
   async getUpcomingSessions() {
     const now = new Date();
@@ -200,6 +204,9 @@ export class SessionsService {
     status: AttendanceStatus,
     comment?: string,
   ) {
+    if (status === AttendanceStatus.NO) {
+      return this.withdrawals.withdraw(sessionId, userId, comment);
+    }
     const session = await this.prisma.session.findUnique({
       where: { id: sessionId },
     });
