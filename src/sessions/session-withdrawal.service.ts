@@ -139,12 +139,21 @@ export class SessionWithdrawalService {
       });
       if (!claimed.count) continue;
       try {
+        const replacements = job.replacements as Record<string, string>;
+        const sessionDate = DateTime.fromISO(replacements.date, { zone: 'UTC' })
+          .setLocale('fr')
+          .toFormat('cccc dd/MM/yyyy');
         await this.email.sendTemplateEmail(
           job.recipient,
           '',
           'Désinscription à une session',
           'session-withdrawal',
-          job.replacements as Record<string, string>,
+          {
+            ...replacements,
+            date: sessionDate.charAt(0).toUpperCase() + sessionDate.slice(1),
+            start: replacements.start?.replace(':', 'h'),
+            end: replacements.end?.replace(':', 'h'),
+          },
         );
         await this.prisma.sessionWithdrawalEmail.update({
           where: { id: job.id },
