@@ -12,6 +12,8 @@ import {
   UseGuards,
   UnauthorizedException,
   ForbiddenException,
+  BadRequestException,
+  HttpCode,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -23,10 +25,16 @@ import {
 } from '@nestjs/swagger';
 import { SessionsService } from './sessions.service';
 import { SessionSlot } from '@prisma/client';
-import { CreateSessionDto, UpdateSessionDto, AdminRegisterDto } from './dto';
+import {
+  CreateSessionDto,
+  UpdateSessionDto,
+  AdminRegisterDto,
+  ReapplySessionsDto,
+} from './dto';
 import { AuthGuard } from 'src/auth/guards/auth.guards';
 import { RsvpDto } from './dto/rsvp.dto';
 import { SessionsCron } from './sessions.cron';
+import { TrainingGroupsService } from '../training-groups/training-groups.service';
 
 @ApiTags('sessions')
 @ApiBearerAuth()
@@ -35,6 +43,7 @@ export class SessionsController {
   constructor(
     private readonly sessions: SessionsService,
     private readonly cron: SessionsCron,
+    private readonly trainingGroups: TrainingGroupsService,
   ) {}
 
   @Get('upcoming')
@@ -166,6 +175,36 @@ export class SessionsController {
   }
 
   // ---------- Cron job triggers ----------
+
+  @Post('trigger-reapply')
+  @HttpCode(200)
+  @UseGuards(AuthGuard)
+  @ApiOperation({
+    summary: 'Reapply training group members to existing sessions (admin)',
+    description:
+      'Creates missing YES attendances in the inclusive date range. Existing attendances are left unchanged; canceled sessions are excluded.',
+  })
+  @ApiBody({ type: ReapplySessionsDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns groups, candidates, created',
+  })
+  @ApiResponse({ status: 400, description: 'Invalid date range' })
+  @ApiResponse({ status: 401, description: 'Authentication required' })
+  @ApiResponse({ status: 403, description: 'Admins only' })
+  async triggerReapply(@Req() req: any, @Body() dto: ReapplySessionsDto) {
+    const user = req.user;
+    if (!user) throw new UnauthorizedException();
+    if (user.role !== 'admin') throw new ForbiddenException('Admins only');
+    if (dto.startDate > dto.endDate) {
+      throw new BadRequestException('startDate must be on or before endDate');
+    }
+
+    return this.trainingGroups.applyToSessionsInRange(
+      new Date(dto.startDate),
+      new Date(dto.endDate),
+    );
+  }
 
   @Post('trigger-generate')
   @UseGuards(AuthGuard)
