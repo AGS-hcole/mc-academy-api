@@ -20,7 +20,7 @@ describe('Session withdrawal', () => {
     },
   };
   beforeEach(() => {
-    jest.useFakeTimers().setSystemTime(new Date('2026-10-11T21:59:59.999Z'));
+    jest.useFakeTimers().setSystemTime(new Date('2026-10-11T18:00:00.000Z'));
     db = {
       session: {
         findUnique: jest.fn().mockResolvedValue({
@@ -57,7 +57,7 @@ describe('Session withdrawal', () => {
   });
   afterEach(() => jest.useRealTimers());
 
-  it('withdraws after the registration cutoff, up to the last millisecond of the previous day', async () => {
+  it('withdraws after the registration cutoff, up to 20:00 inclusive on the previous Paris day', async () => {
     await service.withdraw('session', 'user');
     expect(db.attendance.updateMany).toHaveBeenCalledWith({
       where: { id: 'attendance', status: 'YES' },
@@ -83,20 +83,39 @@ describe('Session withdrawal', () => {
     });
   });
 
-  it('rejects midnight and past sessions without changing attendance', async () => {
-    jest.setSystemTime(new Date('2026-10-11T22:00:00Z'));
-    await expect(service.withdraw('session', 'user')).rejects.toThrow(
-      'Withdrawal cutoff passed',
-    );
-    expect(db.attendance.updateMany).not.toHaveBeenCalled();
-  });
+  it.each(['2026-10-11T17:59:59.999Z', '2026-10-11T18:00:00.000Z'])(
+    'allows withdrawal at %s',
+    async now => {
+      jest.setSystemTime(new Date(now));
+      await service.withdraw('session', 'user');
+      expect(db.attendance.updateMany).toHaveBeenCalled();
+    },
+  );
 
   it.each([
-    ['2026-03-29', '2026-03-28T23:00:00.000Z'],
-    ['2026-03-30', '2026-03-29T22:00:00.000Z'],
-    ['2026-10-25', '2026-10-24T22:00:00.000Z'],
-    ['2026-10-26', '2026-10-25T23:00:00.000Z'],
-  ])('handles the Paris daylight saving boundary for %s', (day, expected) => {
+    '2026-10-11T18:00:00.001Z',
+    '2026-10-11T21:59:59.999Z',
+    '2026-10-11T22:00:00.000Z',
+    '2026-10-13T10:00:00.000Z',
+  ])(
+    'rejects withdrawal at %s without changing attendance or queuing emails',
+    async now => {
+      jest.setSystemTime(new Date(now));
+      await expect(service.withdraw('session', 'user')).rejects.toThrow(
+        'Withdrawal cutoff passed',
+      );
+      expect(db.attendance.updateMany).not.toHaveBeenCalled();
+      expect(db.sessionWithdrawalEmail.createMany).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([
+    ['2026-03-29', '2026-03-28T19:00:00.000Z'],
+    ['2026-03-30', '2026-03-29T18:00:00.000Z'],
+    ['2026-10-25', '2026-10-24T18:00:00.000Z'],
+    ['2026-10-26', '2026-10-25T19:00:00.000Z'],
+    ['2027-01-01', '2026-12-31T19:00:00.000Z'],
+  ])('handles the previous Paris calendar day for %s', (day, expected) => {
     expect(withdrawalDeadline(new Date(day)).toISOString()).toBe(expected);
   });
 

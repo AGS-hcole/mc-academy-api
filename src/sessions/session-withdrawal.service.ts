@@ -16,6 +16,8 @@ const ZONE = 'Europe/Paris';
 export function withdrawalDeadline(date: Date): Date {
   return DateTime.fromISO(date.toISOString().slice(0, 10), { zone: ZONE })
     .startOf('day')
+    .minus({ days: 1 })
+    .set({ hour: 20 })
     .toJSDate();
 }
 
@@ -60,7 +62,7 @@ export class SessionWithdrawalService {
       // A repeated request is harmless, including after the deadline.
       if (attendance.status === 'NO') return attendance;
       const now = new Date();
-      if (now >= withdrawalDeadline(session.date)) {
+      if (now > withdrawalDeadline(session.date)) {
         throw new ForbiddenException('Withdrawal cutoff passed');
       }
 
